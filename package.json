@@ -15,7 +15,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "mongoose": "^8.14.2"
+    "logrotate-stream": "^0.2.9",
+    "mongoose": "^8.14.2",
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",
