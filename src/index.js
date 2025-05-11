@@ -13,6 +13,7 @@ if (!PORT || !MONGODB_URI) {
   });
   process.exit(1);
 }
+
 // Connect to MongoDB
 connectToDatabase(MONGODB_URI);
 
