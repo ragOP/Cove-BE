@@ -4,6 +4,9 @@ const express = require('express');
 const morgan = require('morgan');
 const logrotate = require('logrotate-stream');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger/index');
+const ApiResponse = require('./utils/apiResponse');
 
 const app = express();
 
@@ -11,6 +14,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+console.log(swaggerSpec.paths);
 
 // Set up logging with Morgan
 if (process.env.NODE_ENV === 'development') {
@@ -40,5 +45,12 @@ app.get('/', (req, res) => {
 
 app.use('/api/users', require('./routes/users/index'));
 app.use('/api/auth', require('./routes/auth/index'));
+
+// 404 Not Found Middleware
+app.use((req, res, next) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(404, null, `Route ${req.originalUrl} not found`, null));
+});
 
 module.exports = app;
