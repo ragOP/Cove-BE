@@ -38,4 +38,7 @@ app.get('/', (req, res) => {
   res.send('Welcome to the cove API');
 });
 
+app.use('/api/users', require('./routes/users/index'));
+app.use('/api/auth', require('./routes/auth/index'));
+
 module.exports = app;
