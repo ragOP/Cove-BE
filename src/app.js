@@ -43,7 +43,7 @@ app.get('/', (req, res) => {
   res.send('Welcome to the cove API');
 });
 
-app.use('/api/users', require('./routes/users/index'));
+app.use('/api/user', require('./routes/users/index'));
 app.use('/api/auth', require('./routes/auth/index'));
 
 // 404 Not Found Middleware

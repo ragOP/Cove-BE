@@ -53,12 +53,14 @@ const userSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+        default: [],
       },
     ],
     blockedUsers: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+        default: [],
       },
     ],
     socketId: {
