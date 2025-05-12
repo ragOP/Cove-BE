@@ -1,11 +1,11 @@
 const { body } = require('express-validator');
 
 exports.validateMobileAndOTP = [
-  body('mobileNumber')
+  body('phoneNumber')
     .notEmpty()
-    .withMessage('Mobile number is required')
+    .withMessage('Phone number is required')
     .matches(/^\d{10}$/)
-    .withMessage('Mobile number must be exactly 10 digits'),
+    .withMessage('Phone number must be exactly 10 digits'),
 
   body('otp')
     .notEmpty()

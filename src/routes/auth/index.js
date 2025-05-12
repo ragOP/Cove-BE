@@ -17,7 +17,7 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             properties:
- *               mobileNumber:
+ *               phoneNumber:
  *                 type: string
  *                 example: '1234567890'
  *               otp:

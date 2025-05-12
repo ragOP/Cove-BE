@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
 const deviceInfoSchema = new mongoose.Schema({
-  uniqueId: { type: String, required: true },
-  type: { type: String, enum: ['ios', 'android', 'web'], required: true },
+  uniqueId: { type: String },
+  type: { type: String, enum: ['ios', 'android', 'web'] },
   lastActive: { type: Date, default: Date.now },
   pushToken: { type: String },
 });
@@ -16,26 +16,21 @@ const userSchema = new mongoose.Schema(
     },
     username: {
       type: String,
-      unique: true,
-      required: true,
       lowercase: true,
       trim: true,
     },
     phoneNumber: {
       type: String,
       required: true,
-      unique: true,
     },
     email: {
       type: String,
-      unique: true,
       sparse: true,
       lowercase: true,
       trim: true,
     },
     password: {
       type: String,
-      required: true,
       select: false,
     },
     profilePicture: {
@@ -72,6 +67,10 @@ const userSchema = new mongoose.Schema(
     FCMToken: {
       type: String,
     },
+    isProfileComplete: {
+      type: Boolean,
+      default: false,
+    },
     deviceInfo: deviceInfoSchema,
   },
   {
@@ -90,4 +89,5 @@ userSchema.methods.comparePassword = async function (plainPassword) {
   return await bcrypt.compare(plainPassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+module.exports = User;
