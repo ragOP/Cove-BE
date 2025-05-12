@@ -27,9 +27,7 @@ exports.updateUserProfile = async (data, id) => {
 };
 
 exports.checkUserExists = async username => {
-  console.log('checkUserExists', username);
   const user = await User.findOne({ username });
-  console.log('checkUserExists', user);
   if (user) return user;
   return null;
 };
