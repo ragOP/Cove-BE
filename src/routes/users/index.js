@@ -5,6 +5,7 @@ const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
 const { storage } = require('../../config/multer/index');
 const { user } = require('../../middleware/protectedRoute');
+const { validateUsernameQuery } = require('../../validators/users');
 const router = express.Router();
 
 const upload = multer({ storage: storage });
@@ -92,5 +93,7 @@ router
  *       200:
  *         description: Username availability status
  */
-router.route('/is-username-available').get(user, handleIsUsernameAvailable);
+router
+  .route('/is-username-available')
+  .get(user, validateUsernameQuery, validateRequest, handleIsUsernameAvailable);
 module.exports = router;
