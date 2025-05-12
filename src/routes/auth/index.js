@@ -1,5 +1,7 @@
 const express = require('express');
 const { handleUserRegister } = require('../../controllers/auth');
+const { validateMobileAndOTP } = require('../../validators/auth');
+const { validateRequest } = require('../../middleware/validateRequest');
 const router = express.Router();
 
 /**
@@ -25,6 +27,6 @@ const router = express.Router();
  *       201:
  *         description: User registered successfully
  */
-router.route('/user').post(handleUserRegister);
+router.route('/user').post(validateMobileAndOTP, validateRequest, handleUserRegister);
 
 module.exports = router;
