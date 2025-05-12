@@ -1,7 +1,7 @@
-const fs = require("fs/promises");
-const { cloudinary_js_config } = require("../../config/cloudniary/index");
+const fs = require('fs/promises');
+const { cloudinary_js_config } = require('../../config/cloudniary/index');
 
-exports.uploadSingleFile = async (filePath, folder = "") => {
+exports.uploadSingleFile = async (filePath, folder = '') => {
   try {
     const result = await cloudinary_js_config.uploader.upload(filePath, { folder });
     await fs.unlink(filePath);
@@ -11,7 +11,7 @@ exports.uploadSingleFile = async (filePath, folder = "") => {
   }
 };
 
-exports.uploadMultipleFiles = async (files, folder = "") => {
+exports.uploadMultipleFiles = async (files, folder = '') => {
   try {
     const uploadedUrls = [];
     for (const file of files) {
@@ -25,11 +25,11 @@ exports.uploadMultipleFiles = async (files, folder = "") => {
   }
 };
 
-exports.uploadVoiceNote = async (filePath, folder = "") => {
+exports.uploadVoiceNote = async (filePath, folder = '') => {
   try {
     const result = await cloudinary_js_config.uploader.upload(filePath, {
       folder,
-      resource_type: "video",
+      resource_type: 'video',
     });
     await fs.unlink(filePath);
     return result.secure_url;
@@ -38,11 +38,11 @@ exports.uploadVoiceNote = async (filePath, folder = "") => {
   }
 };
 
-exports.uploadPDF = async (filePath, folder = "") => {
+exports.uploadPDF = async (filePath, folder = '') => {
   try {
     const result = await cloudinary_js_config.uploader.upload(filePath, {
       folder,
-      resource_type: "raw",
+      resource_type: 'raw',
     });
     await fs.unlink(filePath);
     return result.secure_url;

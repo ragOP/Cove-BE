@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { handleUserProfileUpdate } = require('../../controllers/users');
+const { handleUserProfileUpdate, handleIsUsernameAvailable } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
 const { storage } = require('../../config/multer/index');
@@ -73,4 +73,24 @@ router
     handleUserProfileUpdate
   );
 
+/**
+ * @swagger
+ * /api/user/is-username-available:
+ *   get:
+ *     summary: Check if username is available
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: johndoe123
+ *     responses:
+ *       200:
+ *         description: Username availability status
+ */
+router.route('/is-username-available').get(user, handleIsUsernameAvailable);
 module.exports = router;

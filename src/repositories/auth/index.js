@@ -6,9 +6,9 @@ exports.checkUserExists = async phoneNumber => {
   return null;
 };
 
-exports.createUser = async (phoneNumber) => {
+exports.createUser = async phoneNumber => {
   const newUser = await User.create({
-    phoneNumber
+    phoneNumber,
   });
   return newUser;
 };

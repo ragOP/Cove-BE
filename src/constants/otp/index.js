@@ -1,3 +1,3 @@
 module.exports = {
-    OTP: 123456,
-}
+  OTP: 123456,
+};

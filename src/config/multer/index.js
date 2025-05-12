@@ -1,5 +1,5 @@
-const multer = require("multer");
-const path = require("path");
+const multer = require('multer');
+const path = require('path');
 
 const allowedFileTypes = {
   images: /jpeg|jpg|png|gif/,
@@ -9,19 +9,19 @@ const allowedFileTypes = {
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let folder = "";
+    let folder = '';
 
     if (allowedFileTypes.images.test(file.mimetype)) {
-      folder = "images";
+      folder = 'images';
     } else if (allowedFileTypes.audio.test(file.mimetype)) {
-      folder = "voice_notes";
+      folder = 'voice_notes';
     } else if (allowedFileTypes.pdf.test(file.mimetype)) {
-      folder = "pdfs";
+      folder = 'pdfs';
     } else {
-      return cb(new Error("Invalid file type."));
+      return cb(new Error('Invalid file type.'));
     }
 
-    const uploadPath = path.join(__dirname, "../../uploads", folder);
+    const uploadPath = path.join(__dirname, '../../uploads', folder);
     cb(null, uploadPath);
   },
 
@@ -40,10 +40,7 @@ const fileFilter = (req, file, cb) => {
   ) {
     cb(null, true);
   } else {
-    cb(
-      new Error("Invalid file type. Only images, audio, and PDFs are allowed."),
-      false
-    );
+    cb(new Error('Invalid file type. Only images, audio, and PDFs are allowed.'), false);
   }
 };
 

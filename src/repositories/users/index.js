@@ -7,6 +7,7 @@ exports.updateUserProfile = async (data, id) => {
   };
 
   if (data.name) updateFields.name = data.name;
+  if (data.username) updateFields.username = data.username;
   if (data.email) updateFields.email = data.email;
   if (data.phoneNumber) updateFields.phoneNumber = data.phoneNumber;
   if (data.profilePicture) updateFields.profilePicture = data.profilePicture;
@@ -23,4 +24,12 @@ exports.updateUserProfile = async (data, id) => {
   });
 
   return user;
+};
+
+exports.checkUserExists = async username => {
+  console.log('checkUserExists', username);
+  const user = await User.findOne({ username });
+  console.log('checkUserExists', user);
+  if (user) return user;
+  return null;
 };
