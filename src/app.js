@@ -7,6 +7,7 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger/index');
 const ApiResponse = require('./utils/apiResponse');
+const logrotateStream = require('logrotate-stream');
 
 const app = express();
 
@@ -25,14 +26,11 @@ if (process.env.NODE_ENV === 'development') {
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir);
   }
-  // Rotate log every 10 days and delete old logs
-  const accessLogStream = logrotate.createStream({
+  const accessLogStream = logrotate({
     file: path.join(logDir, 'access.log'),
     size: '10M',
+    keep: 3,
     compress: true,
-    keep: 7,
-    date_format: 'YYYY-MM-DD',
-    max_age: '10d',
   });
 
   app.use(morgan('combined', { stream: accessLogStream }));
