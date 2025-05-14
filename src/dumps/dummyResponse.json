@@ -1,0 +1,54 @@
+{
+  "success": true,
+  "message": "Chat list fetched successfully",
+  "data": [
+    {
+      "chatId": "663fd010e4f98c456d8b123a",
+      "user": {
+        "_id": "663fd010e4f98c456d8b1111",
+        "name": "Raghib Najmi",
+        "username": "raghib.najmi",
+        "profilePicture": "https://res.cloudinary.com/demo/image/upload/v123456789/raghib.jpg"
+      },
+      "lastMessage": {
+        "type": "text",
+        "content": "What's the status of the deployment?",
+        "timestamp": "2025-05-14T13:30:00Z",
+        "status": "delivered"
+      },
+      "unreadCount": 3
+    },
+    {
+      "chatId": "663fd010e4f98c456d8b123a",
+      "user": {
+        "_id": "663fd010e4f98c456d8b1111",
+        "name": "Raghib Najmi",
+        "username": "raghib.najmi",
+        "profilePicture": "https://res.cloudinary.com/demo/image/upload/v123456789/raghib.jpg"
+      },
+      "lastMessage": {
+        "type": "text",
+        "content": "What's the status of the deployment?",
+        "timestamp": "2025-05-14T13:30:00Z",
+        "status": "delivered"
+      },
+      "unreadCount": 3
+    },
+    {
+      "chatId": "663fd010e4f98c456d8b123b",
+      "user": {
+        "_id": "663fd010e4f98c456d8b1112",
+        "name": "Kashif Deshmukh",
+        "username": "kashif.deshmukh",
+        "profilePicture": "https://res.cloudinary.com/demo/image/upload/v123456789/kashif.jpg"
+      },
+      "lastMessage": {
+        "type": "text",
+        "content": "Are we still on track for the release?",    
+        "timestamp": "2025-05-14T14:00:00Z",
+        "status": "delivered"
+      },
+      "unreadCount": 1
+    }
+  ]
+}

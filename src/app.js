@@ -7,7 +7,6 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger/index');
 const ApiResponse = require('./utils/apiResponse');
-const logrotateStream = require('logrotate-stream');
 
 const app = express();
 

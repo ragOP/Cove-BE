@@ -1,0 +1,49 @@
+{
+  "_id": "66401d7bfc13ae1e9f000001",
+  "participants": [
+    {
+      "_id": "663fd010e4f98c456d8b1111",
+      "username": "farishjamal",
+      "name": "Farish Jamal",
+      "profilePicture": "https://example.com/farish.png"
+    },
+    {
+      "_id": "663fd010e4f98c456d8b2222",
+      "username": "raghibnajmi",
+      "name": "Raghib Najmi",
+      "profilePicture": "https://example.com/raghib.png"
+    }
+  ],
+  "messages": [
+    {
+      "_id": "66401f7bfc13ae1e9f000002",
+      "sender": "663fd010e4f98c456d8b1111",
+      "type": "text",
+      "content": "Hey Raghib! Are you available for a quick call?",
+      "isRead": "delivered",
+      "timestamp": "2025-05-14T08:45:00.000Z"
+    },
+    {
+      "_id": "66401f8bfc13ae1e9f000003",
+      "sender": "663fd010e4f98c456d8b2222",
+      "type": "text-image",
+      "content": "Sure, sending the document too.",
+      "mediaUrl": "https://example.com/chat-image.jpg",
+      "isRead": "read",
+      "timestamp": "2025-05-14T08:47:00.000Z"
+    }
+  ],
+  "lastMessage": {
+    "_id": "66401f8bfc13ae1e9f000003",
+    "sender": "663fd010e4f98c456d8b2222",
+    "type": "text-image",
+    "content": "Sure, sending the document too.",
+    "mediaUrl": "https://example.com/chat-image.jpg",
+    "isRead": "read",
+    "timestamp": "2025-05-14T08:47:00.000Z"
+  },
+  "isBlocked": false,
+  "blockedBy": null,
+  "createdAt": "2025-05-14T08:30:00.000Z",
+  "updatedAt": "2025-05-14T08:47:00.000Z"
+}
