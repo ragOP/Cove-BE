@@ -1,11 +1,26 @@
 const express = require('express');
 const multer = require('multer');
-const { handleUserProfileUpdate, handleIsUsernameAvailable, handleUserSearch, handleAddFriend } = require('../../controllers/users');
+const {
+  handleUserProfileUpdate,
+  handleIsUsernameAvailable,
+  handleUserSearch,
+  handleAddFriend,
+  getAllChats,
+  handleGetAllChats,
+  handleSendMessage,
+  handleSendFriendRequest,
+  handleAcceptFriendRequest,
+  handleGetPendingFriendRequests,
+} = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
 const { storage } = require('../../config/multer/index');
 const { user } = require('../../middleware/protectedRoute');
-const { validateUsernameQuery, validateUserSearch, validateAddFriend } = require('../../validators/users');
+const {
+  validateUsernameQuery,
+  validateUserSearch,
+  validateAddFriend,
+} = require('../../validators/users');
 const router = express.Router();
 
 const upload = multer({ storage: storage });
@@ -115,13 +130,13 @@ router
  *     responses:
  *       200:
  *         description: Search results
- */ 
+ */
 router.route('/search').get(user, validateUserSearch, validateRequest, handleUserSearch);
 /**
  * @swagger
  * /api/user/add-friend:
  *   post:
- *     summary: Add a friend
+ *     summary: Send a friend request
  *     tags: [User]
  *     security:
  *       - bearerAuth: []
@@ -132,14 +147,45 @@ router.route('/search').get(user, validateUserSearch, validateRequest, handleUse
  *           schema:
  *             type: object
  *             properties:
- *               friendId:
+ *               receiverId:
  *                 type: string
  *                 example: 60d5f484f1c2b8b8a4e4e4e4
  *     responses:
  *       200:
- *         description: Friend added successfully
+ *         description: Friend request sent successfully
  */
-router
-  .route('/add-friend')
-  .post(user, handleAddFriend);
+router.route('/add-friend').post(user, handleSendFriendRequest);
+/**
+ * @swagger
+ * /api/user/friend-requests/{requestId}/accept:
+ *   patch:
+ *     summary: Accept a friend request
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: requestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200:
+ *         description: Friend request accepted successfully
+ */
+router.patch('/friend-requests/:requestId/accept', user, handleAcceptFriendRequest);
+/**
+ * @swagger
+ * /api/user/friend-requests/pending:
+ *   get:
+ *     summary: Get pending friend requests
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of pending friend requests
+ */
+router.get('/friend-requests/pending', user, handleGetPendingFriendRequests);
 module.exports = router;

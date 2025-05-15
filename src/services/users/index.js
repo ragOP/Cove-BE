@@ -1,11 +1,12 @@
-const { checkExact } = require('express-validator');
+const OneToOneChat = require('../../models/chatModel/index');
+const FriendRequest = require('../../models/requestModel/index');
 const { uploadSingleFile } = require('../../functions/cloudniary');
 const {
   updateUserProfile,
   checkUserExists,
   allMatchingSearch,
-  addFriendToUser,
   findUserById,
+  checkExistingRequest,
 } = require('../../repositories/users');
 const User = require('../../models/userModel');
 
@@ -68,52 +69,92 @@ exports.searchUser = async query => {
   }
 };
 
-exports.addFriend = async (userId, friendId) => {
-  if (userId.toString() === friendId) {
+exports.sendFriendRequest = async (senderId, receiverId) => {
+  if (senderId === receiverId) {
     return {
+      message: 'You cannot send a friend request to yourself',
+      data: null,
       statusCode: 400,
-      message: "You can't add yourself as a friend",
-      data: null,
     };
   }
 
-  const user = await findUserById(userId);
-  if (!user) {
+  const sender = await findUserById(senderId);
+  const receiver = await findUserById(receiverId);
+
+  if (!sender || !receiver) {
     return {
+      message: 'User not found',
+      data: null,
       statusCode: 404,
-      message: 'User to add not found',
-      data: null,
     };
   }
 
-  const friend = await findUserById(friendId);
-  if (!friend) {
+  const isAlreadyFriend = sender.friends.includes(receiverId);
+  if (isAlreadyFriend) {
     return {
-      statusCode: 404,
-      message: 'User to add not found',
+      message: 'You are already friends with this user',
       data: null,
+      statusCode: 409,
     };
   }
 
-  const alreadyFriend = user.friends?.some(
-    existingFriendId => existingFriendId.toString() === friendId
-  );
+  const existingRequest = await checkExistingRequest(senderId, receiverId);
 
-  console.log('Already friend:', alreadyFriend);
-
-  if (alreadyFriend) {
+  if (existingRequest) {
     return {
-      statusCode: 400,
-      message: 'User is already your friend',
+      message: 'Friend request already pending',
       data: null,
+      statusCode: 409,
     };
   }
 
-  await addFriendToUser(userId, friendId);
+  const request = await createNewFriendRequest(senderId, receiverId);
 
   return {
+    message: 'Friend request sent successfully',
+    data: request._id,
+  };
+};
+
+exports.acceptFriendRequest = async requestId => {
+  const request = await findPendingFriendRequestBySender(requestId);
+
+  if (!request || request.status !== 'pending') {
+    return {
+      message: 'Invalid or already processed request',
+      data: null,
+      statusCode: 400,
+    };
+  }
+
+  await acceptFriendRequestById(request);
+  await addFriends(request.sender, request.receiver);
+
+  const existingChat = await checkOneToOneChatExists(request.sender, request.receiver);
+
+  if (!existingChat) {
+    await createOneToOneChat(request.sender, request.receiver);
+  }
+
+  return {
+    message: 'Friend request accepted successfully',
+    data: request.sender,
     statusCode: 200,
-    message: 'Friend added successfully',
-    data: { friendId: friend._id },
+  };
+};
+
+exports.getPendingFriendRequests = async userId => {
+  const requests = await getPendingFriendRequests(userId);
+  if (!requests || requests.length === 0) {
+    return {
+      message: 'No pending friend requests',
+      data: null,
+      statusCode: 404,
+    };
+  }
+  return {
+    message: 'Pending friend requests retrieved successfully',
+    data: requests,
+    statusCode: 200,
   };
 };
