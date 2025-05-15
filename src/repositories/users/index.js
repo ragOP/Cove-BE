@@ -31,3 +31,13 @@ exports.checkUserExists = async username => {
   if (user) return user;
   return null;
 };
+
+exports.allMatchingSearch = async query => {
+  const users = await User.find({
+    $or: [
+      { username: { $regex: query, $options: 'i' } },                           
+      { phoneNumber: { $regex: query, $options: 'i' } }
+    ]
+  }).select('-password -__v -createdAt -updatedAt');
+  return users;
+};

@@ -1,5 +1,6 @@
+const { checkExact } = require('express-validator');
 const { uploadSingleFile } = require('../../functions/cloudniary');
-const { updateUserProfile, checkUserExists } = require('../../repositories/users');
+const { updateUserProfile, checkUserExists, allMatchingSearch } = require('../../repositories/users');
 
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
@@ -39,6 +40,23 @@ exports.isUsernameAvailable = async username => {
       message: 'Username is available',
       data: null,
       statusCode: 200,
+    };
+  }
+};
+
+exports.searchUser = async query => {
+  const users = await allMatchingSearch(query);
+  if (users) {
+    return {
+      message: 'Users found',
+      data: users,
+      statusCode: 200,
+    };
+  } else {
+    return {
+      message: 'No users found',
+      data: null,
+      statusCode: 404,
     };
   }
 };

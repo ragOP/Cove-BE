@@ -1,11 +1,11 @@
 const express = require('express');
 const multer = require('multer');
-const { handleUserProfileUpdate, handleIsUsernameAvailable } = require('../../controllers/users');
+const { handleUserProfileUpdate, handleIsUsernameAvailable, handleUserSearch } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
 const { storage } = require('../../config/multer/index');
 const { user } = require('../../middleware/protectedRoute');
-const { validateUsernameQuery } = require('../../validators/users');
+const { validateUsernameQuery, validateUserSearch } = require('../../validators/users');
 const router = express.Router();
 
 const upload = multer({ storage: storage });
@@ -96,4 +96,25 @@ router
 router
   .route('/is-username-available')
   .get(user, validateUsernameQuery, validateRequest, handleIsUsernameAvailable);
+
+/**
+ * @swagger
+ * /api/user/search:
+ *   get:
+ *     summary: Search for users
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: johndoe
+ *     responses:
+ *       200:
+ *         description: Search results
+ */ 
+router.route('/search').get(user, validateUserSearch, validateRequest, handleUserSearch);
 module.exports = router;
