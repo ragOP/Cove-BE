@@ -1,4 +1,5 @@
 const { query } = require('express-validator');
+const { body } = require('express-validator');
 
 exports.validateUsernameQuery = [
   query('username')

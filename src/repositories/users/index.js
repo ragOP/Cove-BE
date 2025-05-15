@@ -41,3 +41,15 @@ exports.allMatchingSearch = async query => {
   }).select('-password -__v -createdAt -updatedAt');
   return users;
 };
+
+exports.findUserById = (id) => {
+  return User.findById(id);
+};
+
+exports.addFriendToUser = async (userId, friendId) => {
+  return User.findByIdAndUpdate(
+    userId,
+    { $addToSet: { friends: friendId } },
+    { new: true }
+  );
+};

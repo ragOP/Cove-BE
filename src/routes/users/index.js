@@ -1,11 +1,11 @@
 const express = require('express');
 const multer = require('multer');
-const { handleUserProfileUpdate, handleIsUsernameAvailable, handleUserSearch } = require('../../controllers/users');
+const { handleUserProfileUpdate, handleIsUsernameAvailable, handleUserSearch, handleAddFriend } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
 const { storage } = require('../../config/multer/index');
 const { user } = require('../../middleware/protectedRoute');
-const { validateUsernameQuery, validateUserSearch } = require('../../validators/users');
+const { validateUsernameQuery, validateUserSearch, validateAddFriend } = require('../../validators/users');
 const router = express.Router();
 
 const upload = multer({ storage: storage });
@@ -117,4 +117,29 @@ router
  *         description: Search results
  */ 
 router.route('/search').get(user, validateUserSearch, validateRequest, handleUserSearch);
+/**
+ * @swagger
+ * /api/user/add-friend:
+ *   post:
+ *     summary: Add a friend
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               friendId:
+ *                 type: string
+ *                 example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200:
+ *         description: Friend added successfully
+ */
+router
+  .route('/add-friend')
+  .post(user, handleAddFriend);
 module.exports = router;

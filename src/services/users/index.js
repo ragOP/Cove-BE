@@ -1,6 +1,13 @@
 const { checkExact } = require('express-validator');
 const { uploadSingleFile } = require('../../functions/cloudniary');
-const { updateUserProfile, checkUserExists, allMatchingSearch } = require('../../repositories/users');
+const {
+  updateUserProfile,
+  checkUserExists,
+  allMatchingSearch,
+  addFriendToUser,
+  findUserById,
+} = require('../../repositories/users');
+const User = require('../../models/userModel');
 
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
@@ -59,4 +66,54 @@ exports.searchUser = async query => {
       statusCode: 404,
     };
   }
+};
+
+exports.addFriend = async (userId, friendId) => {
+  if (userId.toString() === friendId) {
+    return {
+      statusCode: 400,
+      message: "You can't add yourself as a friend",
+      data: null,
+    };
+  }
+
+  const user = await findUserById(userId);
+  if (!user) {
+    return {
+      statusCode: 404,
+      message: 'User to add not found',
+      data: null,
+    };
+  }
+
+  const friend = await findUserById(friendId);
+  if (!friend) {
+    return {
+      statusCode: 404,
+      message: 'User to add not found',
+      data: null,
+    };
+  }
+
+  const alreadyFriend = user.friends?.some(
+    existingFriendId => existingFriendId.toString() === friendId
+  );
+
+  console.log('Already friend:', alreadyFriend);
+
+  if (alreadyFriend) {
+    return {
+      statusCode: 400,
+      message: 'User is already your friend',
+      data: null,
+    };
+  }
+
+  await addFriendToUser(userId, friendId);
+
+  return {
+    statusCode: 200,
+    message: 'Friend added successfully',
+    data: { friendId: friend._id },
+  };
 };
