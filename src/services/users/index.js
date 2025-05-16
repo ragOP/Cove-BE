@@ -7,6 +7,10 @@ const {
   allMatchingSearch,
   findUserById,
   checkExistingRequest,
+  createNewFriendRequest,
+  createOneToOneChat,
+  getOneToOneChatByParticipants,
+  createMessageAndAddToChat,
 } = require('../../repositories/users');
 const User = require('../../models/userModel');
 
@@ -156,5 +160,28 @@ exports.getPendingFriendRequests = async userId => {
     message: 'Pending friend requests retrieved successfully',
     data: requests,
     statusCode: 200,
+  };
+};
+
+exports.sendMessageService = async ({ senderId, receiverId, content, type, mediaUrl, duration, fileSize }) => {
+  let chat = await getOneToOneChatByParticipants(senderId, receiverId);
+
+  if (!chat) {
+    await createNewFriendRequest(senderId, receiverId);
+    chat = await createOneToOneChat(senderId, receiverId);
+
+    const message = await createMessageAndAddToChat(chat, { senderId, receiverId, content, type, mediaUrl, duration, fileSize });
+
+    return {
+      message: "Follow request sent. Message sent with request.",
+      data: message,
+      statusCode: 202,
+    };
+  }
+  const message = await createMessageAndAddToChat(chat, { senderId, receiverId, content, type, mediaUrl, duration, fileSize });
+
+  return {
+    message: "Message sent successfully",
+    data: message,
   };
 };

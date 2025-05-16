@@ -8,6 +8,7 @@ const {
   sendFriendRequest,
   acceptFriendRequest,
   getPendingFriendRequests,
+  sendMessageService,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -67,4 +68,19 @@ exports.handleGetPendingFriendRequests = asyncHandler(async (req, res) => {
   const { message, data, statusCode = 200 } = requests;
 
   return res.status(200).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleSendMessage = asyncHandler(async (req, res) => {
+  const { receiverId, content, type, mediaUrl, duration, fileSize } = req.body;
+  console.log(req.body);
+
+  const senderId = req.user.id;
+
+  const result = await sendMessageService({ senderId, receiverId, content, type, mediaUrl, duration, fileSize });
+
+  return res.status(result.statusCode || 200).json({
+    success: true,
+    message: result.message,
+    data: result.data,
+  });
 });

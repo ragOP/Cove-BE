@@ -188,4 +188,92 @@ router.patch('/friend-requests/:requestId/accept', user, handleAcceptFriendReque
  *         description: List of pending friend requests
  */
 router.get('/friend-requests/pending', user, handleGetPendingFriendRequests);
+/**
+ * @swagger
+ * /api/user/messages/send-message:
+ *   post:
+ *     summary: Create a message and add it to a one-to-one chat
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - senderId
+ *               - receiverId
+ *               - content
+ *               - type
+ *             properties:
+ *               senderId:
+ *                 type: string
+ *                 description: ID of the sender
+ *               receiverId:
+ *                 type: string
+ *                 description: ID of the receiver
+ *               content:
+ *                 type: string
+ *                 description: Text content or media URL
+ *               type:
+ *                 type: string
+ *                 enum: [text, text-image, document, voiceNote, audio, video]
+ *                 description: Type of the message
+ *               mediaUrl:
+ *                 type: string
+ *                 format: uri
+ *                 description: Media URL (for media types)
+ *               fileName:
+ *                 type: string
+ *                 description: File name (for documents)
+ *               fileSize:
+ *                 type: number
+ *                 description: File size in bytes (for documents)
+ *               duration:
+ *                 type: number
+ *                 description: Duration in seconds (for audio/video/voiceNote)
+ *     responses:
+ *       200:
+ *         description: Message created and added to chat successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                   description: Message ID
+ *                 sender:
+ *                   type: string
+ *                 receiver:
+ *                   type: string
+ *                 content:
+ *                   type: string
+ *                 type:
+ *                   type: string
+ *                 mediaUrl:
+ *                   type: string
+ *                 fileName:
+ *                   type: string
+ *                 fileSize:
+ *                   type: number
+ *                 duration:
+ *                   type: number
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Bad Request - Missing or invalid data
+ *       500:
+ *         description: Server Error
+ */
+
+router
+  .route('/messages/send-message')
+  .post(user, handleSendMessage);
 module.exports = router;

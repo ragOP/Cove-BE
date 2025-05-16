@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const User = require('../../models/userModel');
 const FriendRequest = require('../../models/requestModel/index');
 const OneToOneChat = require('../../models/chatModel/index');
+const messageModel = require('../../models/messageModel');
 
 exports.updateUserProfile = async (data, id) => {
   const updateFields = {
@@ -100,4 +101,45 @@ exports.createOneToOneChat = async (userId1, userId2) => {
   return await OneToOneChat.create({
     participants: [userId1, userId2],
   });
+};
+
+exports.getOneToOneChatByParticipants = async (userA, userB) => {
+  return await OneToOneChat.findOne({
+    participants: { $all: [userA, userB] },
+  });
+};
+
+exports.createOneToOneChat = async (userA, userB) => {
+  return await OneToOneChat.create({ participants: [userA, userB] });
+};
+
+exports.createMessageAndAddToChat = async (chat, { senderId, receiverId, content, type, mediaUrl, duration, fileSize }) => {
+  const messageData = {
+    sender: senderId,
+    receiver: receiverId,
+    content,
+    type,
+    chat: chat._id,
+  };
+
+  if (type === 'text-image') {
+    messageData.mediaUrl = mediaUrl;
+  }
+  if (type === 'document') {
+    messageData.mediaUrl = mediaUrl; 
+    messageData.fileName = mediaUrl.split('/').pop();
+    if (fileSize) messageData.fileSize = fileSize;
+  }
+
+  if (['voiceNote', 'audio', 'video'].includes(type)) {
+    messageData.mediaUrl = mediaUrl;
+    if (duration) messageData.duration = duration;
+  }
+  const message = await messageModel.create(messageData);
+
+  chat.messages.push(message._id);
+  chat.lastMessage = message._id;
+  await chat.save();
+
+  return message;
 };
