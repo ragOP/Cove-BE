@@ -13,6 +13,7 @@ const {
   createMessageAndAddToChat,
 } = require('../../repositories/users');
 const User = require('../../models/userModel');
+const { encrypt } = require('../../utils/encryption');
 
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
@@ -164,13 +165,15 @@ exports.getPendingFriendRequests = async userId => {
 };
 
 exports.sendMessageService = async ({ senderId, receiverId, content, type, mediaUrl, duration, fileSize }) => {
+  const encryptedContent = content ? encrypt(content) : null;
+  const encryptedMediaUrl = mediaUrl ? encrypt(mediaUrl) : null;
   let chat = await getOneToOneChatByParticipants(senderId, receiverId);
 
   if (!chat) {
     await createNewFriendRequest(senderId, receiverId);
     chat = await createOneToOneChat(senderId, receiverId);
 
-    const message = await createMessageAndAddToChat(chat, { senderId, receiverId, content, type, mediaUrl, duration, fileSize });
+    const message = await createMessageAndAddToChat(chat, { senderId, receiverId, content: encryptedContent, type, mediaUrl: encryptedMediaUrl, duration, fileSize });
 
     return {
       message: "Follow request sent. Message sent with request.",
@@ -178,7 +181,7 @@ exports.sendMessageService = async ({ senderId, receiverId, content, type, media
       statusCode: 202,
     };
   }
-  const message = await createMessageAndAddToChat(chat, { senderId, receiverId, content, type, mediaUrl, duration, fileSize });
+  const message = await createMessageAndAddToChat(chat, { senderId, receiverId, content: encryptedContent, type, mediaUrl: encryptedMediaUrl, duration, fileSize });
 
   return {
     message: "Message sent successfully",

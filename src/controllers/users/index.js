@@ -72,7 +72,6 @@ exports.handleGetPendingFriendRequests = asyncHandler(async (req, res) => {
 
 exports.handleSendMessage = asyncHandler(async (req, res) => {
   const { receiverId, content, type, mediaUrl, duration, fileSize } = req.body;
-  console.log(req.body);
 
   const senderId = req.user.id;
 
