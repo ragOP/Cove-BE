@@ -11,6 +11,7 @@ const {
   handleSendFriendRequest,
   handleAcceptFriendRequest,
   handleGetPendingFriendRequests,
+  handleUploadFiles
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -293,4 +294,64 @@ router
 router
   .route('/messages/get-all-chats')
   .get(user, handleGetAllChats);
+
+/**
+ * @swagger
+ * /api/user/upload-files:
+ *   post:
+ *     summary: Upload multiple files
+ *     tags: [Files]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               files:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Multiple files to upload (max 10 files, 100MB each)
+ *     responses:
+ *       200:
+ *         description: Files uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       originalName:
+ *                         type: string
+ *                       fileName:
+ *                         type: string
+ *                       fileType:
+ *                         type: string
+ *                       fileSize:
+ *                         type: number
+ *                       url:
+ *                         type: string
+ *       400:
+ *         description: Bad request - Invalid file type or size
+ *       500:
+ *         description: Server error
+ */
+router.route('/upload-files')
+  .post(
+    user,
+    upload.array('files', 10),
+    handleUploadFiles
+  );
 module.exports = router;

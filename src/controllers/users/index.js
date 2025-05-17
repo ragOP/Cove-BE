@@ -9,6 +9,8 @@ const {
   acceptFriendRequest,
   getPendingFriendRequests,
   sendMessageService,
+  uploadFile,
+  uploadFiles
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -86,4 +88,15 @@ exports.handleGetAllChats = asyncHandler(async (req, res) => {
   const result = await getAllChatsForUser(userId);
 
   return res.status(200).json(new ApiResponse(result.statusCode, result.data, result.message));
+});
+
+exports.handleUploadFiles = asyncHandler(async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json(new ApiResponse(400, null, 'No files were uploaded.'));
+  }
+
+  const result = await uploadFiles(req.files);
+  const { message, data, statusCode = 200 } = result;
+
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
 });
