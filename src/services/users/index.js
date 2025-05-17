@@ -244,11 +244,16 @@ exports.getAllChatsForUser = async userId => {
         receiver: userId,
         status: 'sent',
       });
+      const messages = await messageModel.find({ chat: chat._id }).sort({ createdAt: -1 });
       return {
         ...chat.toObject(),
         lastMessage: chat.lastMessage,
         unreadCount,
-        messages: undefined,
+        messages: messages.map(message => ({
+          ...message.toObject(),
+          content: message.content ? decrypt(message.content) : null,
+          mediaUrl: message.mediaUrl ? decrypt(message.mediaUrl) : null,
+        })),
       };
     })
   );

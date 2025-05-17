@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const secretKey = process.env.ENCRYPTION_KEY || 'your-32-byte-secret-key';
+const secretKey = process.env.ENCRYPTION_KEY;
 const iv = crypto.randomBytes(16);
 
 exports.encrypt = text => {

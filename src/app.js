@@ -15,7 +15,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-console.log(swaggerSpec.paths);
 
 // Set up logging with Morgan
 if (process.env.NODE_ENV === 'development') {
