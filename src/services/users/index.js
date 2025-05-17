@@ -14,6 +14,8 @@ const {
 } = require('../../repositories/users');
 const User = require('../../models/userModel');
 const { encrypt } = require('../../utils/encryption');
+const { decrypt } = require('../../utils/encryption');
+const messageModel = require('../../models/messageModel');
 
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
@@ -164,27 +166,96 @@ exports.getPendingFriendRequests = async userId => {
   };
 };
 
-exports.sendMessageService = async ({ senderId, receiverId, content, type, mediaUrl, duration, fileSize }) => {
+exports.sendMessageService = async ({
+  senderId,
+  receiverId,
+  content,
+  type,
+  mediaUrl,
+  duration,
+  fileSize,
+}) => {
   const encryptedContent = content ? encrypt(content) : null;
   const encryptedMediaUrl = mediaUrl ? encrypt(mediaUrl) : null;
   let chat = await getOneToOneChatByParticipants(senderId, receiverId);
 
+  let isFriends = await checkExistingRequest(senderId, receiverId);
+  if (isFriends && isFriends.status === 'pending') {
+    return {
+      message: 'Your friend request is pending. Please accept it to send a message.',
+      data: null,
+      statusCode: 403,
+    };
+  }
   if (!chat) {
     await createNewFriendRequest(senderId, receiverId);
     chat = await createOneToOneChat(senderId, receiverId);
 
-    const message = await createMessageAndAddToChat(chat, { senderId, receiverId, content: encryptedContent, type, mediaUrl: encryptedMediaUrl, duration, fileSize });
+    const message = await createMessageAndAddToChat(chat, {
+      senderId,
+      receiverId,
+      content: encryptedContent,
+      type,
+      mediaUrl: encryptedMediaUrl,
+      duration,
+      fileSize,
+    });
 
     return {
-      message: "Follow request sent. Message sent with request.",
+      message: 'Follow request sent. Message sent with request.',
       data: message,
       statusCode: 202,
     };
   }
-  const message = await createMessageAndAddToChat(chat, { senderId, receiverId, content: encryptedContent, type, mediaUrl: encryptedMediaUrl, duration, fileSize });
+  const message = await createMessageAndAddToChat(chat, {
+    senderId,
+    receiverId,
+    content: encryptedContent,
+    type,
+    mediaUrl: encryptedMediaUrl,
+    duration,
+    fileSize,
+  });
 
   return {
-    message: "Message sent successfully",
+    message: 'Message sent successfully',
     data: message,
+    statusCode: 200,
+  };
+};
+
+exports.getAllChatsForUser = async userId => {
+  const chats = await OneToOneChat.find({ participants: userId })
+    .populate('participants', 'name username profilePicture')
+    .populate({
+      path: 'lastMessage',
+      populate: {
+        path: 'sender',
+        select: 'name username profilePicture',
+      },
+    });
+
+  console.log('Chats:', chats);
+
+  const chatResults = await Promise.all(
+    chats.map(async chat => {
+      const unreadCount = await messageModel.countDocuments({
+        chat: chat._id,
+        receiver: userId,
+        status: 'sent',
+      });
+      return {
+        ...chat.toObject(),
+        lastMessage: chat.lastMessage,
+        unreadCount,
+        messages: undefined,
+      };
+    })
+  );
+
+  return {
+    message: 'Chats retrieved successfully',
+    data: chatResults,
+    statusCode: 200,
   };
 };

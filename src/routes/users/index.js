@@ -276,4 +276,21 @@ router.get('/friend-requests/pending', user, handleGetPendingFriendRequests);
 router
   .route('/messages/send-message')
   .post(user, handleSendMessage);
+
+/**
+ * @swagger
+ * /api/user/messages/get-all-chats:
+ *   get:
+ *     summary: Get all chats for a user
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all chats
+ */
+
+router
+  .route('/messages/get-all-chats')
+  .get(user, handleGetAllChats);
 module.exports = router;

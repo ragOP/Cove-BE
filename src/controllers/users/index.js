@@ -77,9 +77,13 @@ exports.handleSendMessage = asyncHandler(async (req, res) => {
 
   const result = await sendMessageService({ senderId, receiverId, content, type, mediaUrl, duration, fileSize });
 
-  return res.status(result.statusCode || 200).json({
-    success: true,
-    message: result.message,
-    data: result.data,
-  });
+  return res.status(200).json(new ApiResponse(result.statusCode, result.data, result.message));
+});
+
+exports.handleGetAllChats = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const result = await getAllChatsForUser(userId);
+
+  return res.status(200).json(new ApiResponse(result.statusCode, result.data, result.message));
 });
