@@ -16,6 +16,7 @@ const User = require('../../models/userModel');
 const { encrypt } = require('../../utils/encryption');
 const { decrypt } = require('../../utils/encryption');
 const messageModel = require('../../models/messageModel');
+const { findPendingFriendRequestBySender } = require('../../repositories/users/index');
 
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
