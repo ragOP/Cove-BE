@@ -250,6 +250,7 @@ exports.getAllChatsForUser = async userId => {
         status: 'sent',
       });
       const messages = await messageModel.find({ chat: chat._id }).sort({ createdAt: -1 });
+      const otherParticipant = chat.participants.find(p => p._id.toString() !== userId.toString());
       return {
         ...chat.toObject(),
         lastMessage: chat.lastMessage,
@@ -259,6 +260,7 @@ exports.getAllChatsForUser = async userId => {
           content: message.content ? decrypt(message.content) : null,
           mediaUrl: message.mediaUrl ? decrypt(message.mediaUrl) : null,
         })),
+        chatWith: otherParticipant,
       };
     })
   );
@@ -270,44 +272,44 @@ exports.getAllChatsForUser = async userId => {
   };
 };
 
-exports.uploadFiles = async (files) => {
-    const uploadedFiles = [];
-    
-    for (const file of files) {
-      const fileType = file.mimetype.split('/')[0];
-      let folder;
-      
-      switch (fileType) {
-        case 'image':
-          folder = 'images';
-          break;
-        case 'audio':
-          folder = 'audio';
-          break;
-        case 'video':
-          folder = 'video';
-          break;
-        case 'application':
-          folder = file.mimetype.includes('pdf') ? 'documents' : 'archives';
-          break;
-        default:
-          folder = 'documents';
-      }
+exports.uploadFiles = async files => {
+  const uploadedFiles = [];
 
-      const url = await uploadSingleFile(file.path, folder);
-      
-      uploadedFiles.push({
-        originalName: file.originalname,
-        fileName: file.filename,
-        fileType: file.mimetype,
-        fileSize: file.size,
-        url: url
-      });
+  for (const file of files) {
+    const fileType = file.mimetype.split('/')[0];
+    let folder;
+
+    switch (fileType) {
+      case 'image':
+        folder = 'images';
+        break;
+      case 'audio':
+        folder = 'audio';
+        break;
+      case 'video':
+        folder = 'video';
+        break;
+      case 'application':
+        folder = file.mimetype.includes('pdf') ? 'documents' : 'archives';
+        break;
+      default:
+        folder = 'documents';
     }
 
-    return {
-      message: 'Files uploaded successfully',
-      data: uploadedFiles,
-      statusCode: 200
-    };
+    const url = await uploadSingleFile(file.path, folder);
+
+    uploadedFiles.push({
+      originalName: file.originalname,
+      fileName: file.filename,
+      fileType: file.mimetype,
+      fileSize: file.size,
+      url: url,
+    });
+  }
+
+  return {
+    message: 'Files uploaded successfully',
+    data: uploadedFiles,
+    statusCode: 200,
+  };
 };
