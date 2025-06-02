@@ -14,6 +14,7 @@ const {
   acceptFriendRequestById,
   addFriends,
   checkOneToOneChatExists,
+  getPendingFriendRequests,
 } = require('../../repositories/users');
 const User = require('../../models/userModel');
 const { encrypt } = require('../../utils/encryption');
