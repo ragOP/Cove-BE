@@ -250,7 +250,7 @@ exports.getAllChatsForUser = async userId => {
         status: 'sent',
       });
       const messages = await messageModel.find({ chat: chat._id }).sort({ createdAt: -1 });
-      const otherParticipant = chat.participants.find(p => p._id.toString() !== userId.toString());
+      const otherParticipant = chat.participants.filter(p => p._id.toString() !== userId.toString());
       return {
         ...chat.toObject(),
         lastMessage: chat.lastMessage,
