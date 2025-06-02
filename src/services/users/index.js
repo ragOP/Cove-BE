@@ -12,6 +12,8 @@ const {
   getOneToOneChatByParticipants,
   createMessageAndAddToChat,
   acceptFriendRequestById,
+  addFriends,
+  checkOneToOneChatExists,
 } = require('../../repositories/users');
 const User = require('../../models/userModel');
 const { encrypt } = require('../../utils/encryption');
