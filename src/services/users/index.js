@@ -181,7 +181,7 @@ exports.sendMessageService = async ({
   fileSize,
 }) => {
   const encryptedContent = content ? encrypt(content) : null;
-  // const encryptedMediaUrl = mediaUrl ? encrypt(mediaUrl) : null;
+  const encryptedMediaUrl = mediaUrl ? encrypt(mediaUrl) : null;
   let chat = await getOneToOneChatByParticipants(senderId, receiverId);
 
   let isFriends = await checkExistingRequest(senderId, receiverId);
