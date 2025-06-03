@@ -180,8 +180,8 @@ exports.sendMessageService = async ({
   duration,
   fileSize,
 }) => {
-  const encryptedContent = content ? encrypt(content) : null;
-  const encryptedMediaUrl = mediaUrl ? encrypt(mediaUrl) : null;
+  // const encryptedContent = content ? encrypt(content) : null;
+  // const encryptedMediaUrl = mediaUrl ? encrypt(mediaUrl) : null;
   let chat = await getOneToOneChatByParticipants(senderId, receiverId);
 
   let isFriends = await checkExistingRequest(senderId, receiverId);
@@ -199,9 +199,9 @@ exports.sendMessageService = async ({
     const message = await createMessageAndAddToChat(chat, {
       senderId,
       receiverId,
-      content: encryptedContent,
+      content,
       type,
-      mediaUrl: encryptedMediaUrl,
+      mediaUrl,
       duration,
       fileSize,
     });
@@ -310,6 +310,46 @@ exports.uploadFiles = async files => {
   return {
     message: 'Files uploaded successfully',
     data: uploadedFiles,
+    statusCode: 200,
+  };
+};
+
+exports.getAllOneToOneChats = async userId => {
+  const chats = await OneToOneChat.find({ participants: userId })
+    .populate('participants', 'name username profilePicture')
+    .populate({
+      path: 'lastMessage',  
+      populate: { 
+        path: 'sender receiver',
+        select: 'name username profilePicture',
+      },
+    })
+    .populate({
+      path: 'messages',
+      populate: [{
+        path: 'sender',
+        select: 'name username profilePicture'
+      }, {
+        path: 'receiver',
+        select: 'name username profilePicture'
+      }]
+    });
+
+  const chatsWithFlags = chats.map(chat => {
+    const chatObj = chat.toObject();
+    chatObj.participants = chatObj.participants.map(p => ({
+      ...p,
+      isCurrentUser: p._id.toString() === userId.toString()
+    }));
+    const receiver = chatObj.participants.find(p => p._id.toString() !== userId.toString());
+    chatObj.receiver = receiver;
+
+    return chatObj;
+  });
+
+  return {
+    message: 'One-to-one chats retrieved successfully',
+    data: chatsWithFlags,
     statusCode: 200,
   };
 };

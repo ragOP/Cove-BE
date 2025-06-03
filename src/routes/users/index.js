@@ -11,7 +11,8 @@ const {
   handleSendFriendRequest,
   handleAcceptFriendRequest,
   handleGetPendingFriendRequests,
-  handleUploadFiles
+  handleUploadFiles,
+  handleGetAllOneToOneChats
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -354,4 +355,26 @@ router.route('/upload-files')
     upload.array('files', 10),
     handleUploadFiles
   );
+
+/**
+ * @swagger
+ * /api/user/one-to-one-chat/{id}:
+ *   get:
+ *     summary: Get all one-to-one chats for a user
+ *     tags: [One-to-One Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200:
+ *         description: List of all one-to-one chats
+ */
+
+router.route('/one-to-one-chat/:id').get(user, handleGetAllOneToOneChats);
 module.exports = router;

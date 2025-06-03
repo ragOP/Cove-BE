@@ -10,7 +10,8 @@ const {
   getPendingFriendRequests,
   sendMessageService,
   uploadFile,
-  uploadFiles
+  uploadFiles,
+  getAllOneToOneChats
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -96,6 +97,15 @@ exports.handleUploadFiles = asyncHandler(async (req, res) => {
   }
 
   const result = await uploadFiles(req.files);
+  const { message, data, statusCode = 200 } = result;
+
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleGetAllOneToOneChats = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  const result = await getAllOneToOneChats(userId);
   const { message, data, statusCode = 200 } = result;
 
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
