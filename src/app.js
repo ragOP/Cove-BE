@@ -12,7 +12,19 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+
+// Custom JSON parsing error handling
+app.use(express.json({
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf);
+    } catch (e) {
+      res.status(400).json(new ApiResponse(400, null, 'Invalid JSON format. Please check your request body.'));
+      throw new Error('Invalid JSON');
+    }
+  }
+}));
+
 app.use(express.urlencoded({ extended: true }));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

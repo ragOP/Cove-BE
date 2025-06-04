@@ -22,6 +22,7 @@ const {
   validateUsernameQuery,
   validateUserSearch,
   validateAddFriend,
+  validateSendMessage,
 } = require('../../validators/users');
 const router = express.Router();
 
@@ -277,7 +278,7 @@ router.get('/friend-requests/pending', user, handleGetPendingFriendRequests);
 
 router
   .route('/messages/send-message')
-  .post(user, handleSendMessage);
+  .post(user, validateSendMessage, validateRequest, handleSendMessage);
 
 /**
  * @swagger
