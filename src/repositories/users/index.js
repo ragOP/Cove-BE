@@ -113,7 +113,10 @@ exports.createOneToOneChat = async (userA, userB) => {
   return await OneToOneChat.create({ participants: [userA, userB] });
 };
 
-exports.createMessageAndAddToChat = async (chat, { senderId, receiverId, content, type, mediaUrl, duration, fileSize }) => {
+exports.createMessageAndAddToChat = async (
+  chat,
+  { senderId, receiverId, content, type, mediaUrl, duration, fileSize }
+) => {
   const messageData = {
     sender: senderId,
     receiver: receiverId,
@@ -126,7 +129,7 @@ exports.createMessageAndAddToChat = async (chat, { senderId, receiverId, content
     messageData.mediaUrl = mediaUrl;
   }
   if (type === 'document') {
-    messageData.mediaUrl = mediaUrl; 
+    messageData.mediaUrl = mediaUrl;
     messageData.fileName = mediaUrl.split('/').pop();
     if (fileSize) messageData.fileSize = fileSize;
   }
@@ -141,5 +144,10 @@ exports.createMessageAndAddToChat = async (chat, { senderId, receiverId, content
   chat.lastMessage = message._id;
   await chat.save();
 
-  return message;
+  const populatedMessage = await messageModel
+    .findById(message._id)
+    .populate('sender', 'name username profilePicture')
+    .populate('receiver', 'name username profilePicture');
+
+  return populatedMessage;
 };
