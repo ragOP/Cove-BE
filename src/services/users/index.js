@@ -240,21 +240,22 @@ exports.getAllChatsForUser = async userId => {
       },
     });
 
-  console.log('Chats:', chats);
-
   const chatResults = await Promise.all(
-    chats.map(async chat => {
-      const unreadCount = await messageModel.countDocuments({
+    chats.map(async chat => {      const unreadCount = await messageModel.countDocuments({
         chat: chat._id,
         receiver: userId,
         status: 'sent',
       });
       const messages = await messageModel.find({ chat: chat._id }).sort({ createdAt: -1 });
       const otherParticipant = chat.participants.filter(p => p._id.toString() !== userId.toString());
+      const isFriend = await User.findById(userId).then(user => 
+        user.friends.includes(otherParticipant[0]._id)
+      );
       return {
         ...chat.toObject(),
         lastMessage: chat.lastMessage,
         unreadCount,
+        isFriend,
         messages: messages.map(message => ({
           ...message.toObject(),
           content: message.content,
