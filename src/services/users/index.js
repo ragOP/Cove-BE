@@ -257,8 +257,8 @@ exports.getAllChatsForUser = async userId => {
         unreadCount,
         messages: messages.map(message => ({
           ...message.toObject(),
-          content: message.content ? decrypt(message.content) : null,
-          mediaUrl: message.mediaUrl ? decrypt(message.mediaUrl) : null,
+          content: message.content,
+          mediaUrl: message.mediaUrl,
         })),
         chatWith: otherParticipant,
       };
