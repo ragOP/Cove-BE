@@ -241,14 +241,17 @@ exports.getAllChatsForUser = async userId => {
     });
 
   const chatResults = await Promise.all(
-    chats.map(async chat => {      const unreadCount = await messageModel.countDocuments({
+    chats.map(async chat => {
+      const unreadCount = await messageModel.countDocuments({
         chat: chat._id,
         receiver: userId,
         status: 'sent',
       });
       const messages = await messageModel.find({ chat: chat._id }).sort({ createdAt: -1 });
-      const otherParticipant = chat.participants.filter(p => p._id.toString() !== userId.toString());
-      const isFriend = await User.findById(userId).then(user => 
+      const otherParticipant = chat.participants.filter(
+        p => p._id.toString() !== userId.toString()
+      );
+      const isFriend = await User.findById(userId).then(user =>
         user.friends.includes(otherParticipant[0]._id)
       );
       return {
@@ -315,36 +318,41 @@ exports.uploadFiles = async files => {
   };
 };
 
-exports.getAllOneToOneChats = async userId => {
-  const chats = await OneToOneChat.find({ participants: userId })
+exports.getAllOneToOneChats = async (userId, receiverId) => {
+  const chats = await OneToOneChat.find({
+    participants: { $all: [userId, receiverId] },
+    $expr: { $eq: [{ $size: '$participants' }, 2] },
+  })
     .populate('participants', 'name username profilePicture')
     .populate({
-      path: 'lastMessage',  
-      populate: { 
+      path: 'lastMessage',
+      populate: {
         path: 'sender receiver',
         select: 'name username profilePicture',
       },
     })
     .populate({
       path: 'messages',
-      populate: [{
-        path: 'sender',
-        select: 'name username profilePicture'
-      }, {
-        path: 'receiver',
-        select: 'name username profilePicture'
-      }]
+      populate: [
+        {
+          path: 'sender',
+          select: 'name username profilePicture',
+        },
+        {
+          path: 'receiver',
+          select: 'name username profilePicture',
+        },
+      ],
     });
 
   const chatsWithFlags = chats.map(chat => {
     const chatObj = chat.toObject();
     chatObj.participants = chatObj.participants.map(p => ({
       ...p,
-      isCurrentUser: p._id.toString() === userId.toString()
+      isCurrentUser: p._id.toString() === userId.toString(),
     }));
-    const receiver = chatObj.participants.find(p => p._id.toString() !== userId.toString());
+    const receiver = chatObj.participants.find(p => p._id.toString() === receiverId.toString());
     chatObj.receiver = receiver;
-
     return chatObj;
   });
 
