@@ -104,7 +104,7 @@ exports.handleUploadFiles = asyncHandler(async (req, res) => {
 
 exports.handleGetAllOneToOneChats = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const receiverId = req.params.receiverId
+  const receiverId = req.params.id
 
   const result = await getAllOneToOneChats(userId, receiverId);
   const { message, data, statusCode = 200 } = result;
