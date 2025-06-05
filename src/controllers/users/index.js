@@ -11,7 +11,7 @@ const {
   sendMessageService,
   uploadFile,
   uploadFiles,
-  getAllOneToOneChats
+  getAllOneToOneChats,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -78,15 +78,29 @@ exports.handleSendMessage = asyncHandler(async (req, res) => {
 
   const senderId = req.user.id;
 
-  const result = await sendMessageService({ senderId, receiverId, content, type, mediaUrl, duration, fileSize });
+  const result = await sendMessageService({
+    senderId,
+    receiverId,
+    content,
+    type,
+    mediaUrl,
+    duration,
+    fileSize,
+  });
 
   return res.status(200).json(new ApiResponse(result.statusCode, result.data, result.message));
 });
 
 exports.handleGetAllChats = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  const { page = 1, per_page = 50, search = '' } = req.query;
+  const filters = {
+    search: search ? search.trim() : '',
+    page: parseInt(page, 10),
+    per_page: parseInt(per_page, 10),
+  };
 
-  const result = await getAllChatsForUser(userId);
+  const result = await getAllChatsForUser(userId, filters);
 
   return res.status(200).json(new ApiResponse(result.statusCode, result.data, result.message));
 });
@@ -104,7 +118,7 @@ exports.handleUploadFiles = asyncHandler(async (req, res) => {
 
 exports.handleGetAllOneToOneChats = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const receiverId = req.params.id
+  const receiverId = req.params.id;
 
   const result = await getAllOneToOneChats(userId, receiverId);
   const { message, data, statusCode = 200 } = result;

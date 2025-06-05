@@ -6,7 +6,7 @@ const { connectToDatabase } = require('./config/db');
 const { MONGODB_URI } = process.env;
 
 const { NODE_ENV } = process.env;
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001
 
 // Check if required environment variables are set
 if (!MONGODB_URI || !NODE_ENV || !PORT) {

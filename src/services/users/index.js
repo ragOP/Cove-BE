@@ -229,7 +229,25 @@ exports.sendMessageService = async ({
   };
 };
 
-exports.getAllChatsForUser = async userId => {
+exports.getAllChatsForUser = async (userId, filters) => {
+  const { page = 1, per_page = 50, search = '' } = filters;
+  let query = { participants: userId };
+
+  if (search) {
+    const users = await User.find({
+      $or: [
+        { name: { $regex: search, $options: 'i' } },
+        { username: { $regex: search, $options: 'i' } },
+      ],
+      _id: { $ne: userId },
+    }).select('_id');
+    const userIds = users.map(u => u._id);
+    query.participants = { $all: [userId], $in: userIds };
+  }
+
+  const skip = (parseInt(page) - 1) * parseInt(per_page);
+  const limit = parseInt(per_page);
+
   const chats = await OneToOneChat.find({ participants: userId })
     .populate('participants', 'name username profilePicture')
     .populate({
@@ -238,7 +256,9 @@ exports.getAllChatsForUser = async userId => {
         path: 'sender',
         select: 'name username profilePicture',
       },
-    });
+    })
+    .skip(skip)
+    .limit(limit);
 
   const chatResults = await Promise.all(
     chats.map(async chat => {
