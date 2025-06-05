@@ -12,7 +12,7 @@ const {
   handleAcceptFriendRequest,
   handleGetPendingFriendRequests,
   handleUploadFiles,
-  handleGetAllOneToOneChats
+  handleGetAllOneToOneChats,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -113,7 +113,7 @@ router
  */
 router
   .route('/is-username-available')
-  .get(user, validateUsernameQuery, validateRequest, handleIsUsernameAvailable);
+  .get(validateUsernameQuery, validateRequest, handleIsUsernameAvailable);
 
 /**
  * @swagger
@@ -293,9 +293,7 @@ router
  *         description: List of all chats
  */
 
-router
-  .route('/messages/get-all-chats')
-  .get(user, handleGetAllChats);
+router.route('/messages/get-all-chats').get(user, handleGetAllChats);
 
 /**
  * @swagger
@@ -350,12 +348,7 @@ router
  *       500:
  *         description: Server error
  */
-router.route('/upload-files')
-  .post(
-    user,
-    upload.array('files', 10),
-    handleUploadFiles
-  );
+router.route('/upload-files').post(user, upload.array('files', 10), handleUploadFiles);
 
 /**
  * @swagger
