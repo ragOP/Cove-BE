@@ -35,13 +35,41 @@ exports.checkUserExists = async username => {
   return null;
 };
 
-exports.allMatchingSearch = async query => {
-  const users = await User.find({
+exports.allMatchingSearch = async (query, currentUserId) => {
+  const pendingRequests = await FriendRequest.find({
     $or: [
-      { username: { $regex: query, $options: 'i' } },
-      { phoneNumber: { $regex: query, $options: 'i' } },
+      { sender: currentUserId, status: 'pending' },
+      { receiver: currentUserId, status: 'pending' }
+    ]
+  });
+
+  console.log(pendingRequests);
+
+  const userIdsWithPendingRequests = pendingRequests.reduce((acc, request) => {
+    if (request.sender.toString() !== currentUserId) acc.push(request.sender);
+    if (request.receiver.toString() !== currentUserId) acc.push(request.receiver);
+    return acc;
+  }, []);
+
+  console.log(userIdsWithPendingRequests);
+
+  const currentUser = await User.findById(currentUserId);
+  if (!currentUser) throw new Error('User not found');
+
+  const users = await User.find({
+    $and: [
+      {
+        $or: [
+          { username: { $regex: query, $options: 'i' } },
+          { phoneNumber: { $regex: query, $options: 'i' } },
+        ],
+      },
+      { _id: { $ne: currentUserId } },
+      { _id: { $nin: currentUser.friends } },
+      { _id: { $nin: userIdsWithPendingRequests } },
     ],
   }).select('-password -__v -createdAt -updatedAt');
+
   return users;
 };
 

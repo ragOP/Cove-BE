@@ -38,8 +38,9 @@ exports.handleIsUsernameAvailable = asyncHandler(async (req, res) => {
 
 exports.handleUserSearch = asyncHandler(async (req, res) => {
   const { query } = req.query;
+  const currentUserId = req.user._id;
 
-  const result = await searchUser(query);
+  const result = await searchUser(query, currentUserId);
 
   const { message, data, statusCode = 200 } = result;
 

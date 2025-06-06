@@ -64,9 +64,9 @@ exports.isUsernameAvailable = async username => {
   }
 };
 
-exports.searchUser = async query => {
-  const users = await allMatchingSearch(query);
-  if (users) {
+exports.searchUser = async (query, currentUserId) => {
+  const users = await allMatchingSearch(query, currentUserId);
+  if (users.length > 0) {
     return {
       message: 'Users found',
       data: users,
