@@ -14,6 +14,7 @@ const {
   getAllOneToOneChats,
   getMedia,
   getAllFriends,
+  readChat,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -148,6 +149,16 @@ exports.handleGetAllFriends = asyncHandler(async (req, res) => {
   };
 
   const result = await getAllFriends(userId, filters);
+  const { message, data, statusCode = 200 } = result;
+
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleReadChat = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const chatId = req.params.id;
+
+  const result = await readChat(userId, chatId);
   const { message, data, statusCode = 200 } = result;
 
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));

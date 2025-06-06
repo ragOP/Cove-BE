@@ -15,6 +15,7 @@ const {
   handleGetAllOneToOneChats,
   handleGetMedia,
   handleGetAllFriends,
+  handleReadChat,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -417,4 +418,26 @@ router.route('/one-to-one-chat/:id/media').get(user, handleGetMedia);
  */
 
 router.route('/get-all-friends').get(user, handleGetAllFriends);
+
+/**
+ * @swagger
+ * /api/user/read-chat/{id}:
+ *   patch:
+ *     summary: Read a chat
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200:
+ *         description: Chat read successfully
+ */
+
+router.route('/read-chat/:id').patch(user, handleReadChat);
 module.exports = router;

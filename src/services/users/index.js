@@ -443,3 +443,41 @@ exports.getAllFriends = async (userId, filters) => {
     statusCode: 200,
   };
 };
+
+exports.readChat = async (userId, chatId) => {
+  const chat = await OneToOneChat.findById(chatId);
+  if (!chat) {
+    return {
+      message: 'Chat not found',
+      data: null,
+      statusCode: 404,
+    };
+  }
+  const messages = await messageModel.find({ chat: chatId });
+  const unreadMessages = messages.filter(
+    message => message.receiver.toString() === userId.toString() && message.status === 'sent'
+  );
+  const readMessages = messages.filter(
+    message => message.receiver.toString() === userId.toString() && message.status === 'read'
+  );
+  const unreadCount = unreadMessages.length;
+  const readCount = readMessages.length;
+
+  const result = await messageModel.updateMany(
+    { chat: chatId, receiver: userId },
+    { status: 'read' }
+  );
+  if (result) {
+    return {
+      message: 'Chat read successfully',
+      data: { unreadCount, readCount },
+      statusCode: 200,
+    };
+  } else {
+    return {
+      message: 'Failed to read chat',
+      data: null,
+      statusCode: 500,
+    };
+  }
+};
