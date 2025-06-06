@@ -12,6 +12,7 @@ const {
   uploadFile,
   uploadFiles,
   getAllOneToOneChats,
+  getMedia,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -121,6 +122,17 @@ exports.handleGetAllOneToOneChats = asyncHandler(async (req, res) => {
   const receiverId = req.params.id;
 
   const result = await getAllOneToOneChats(userId, receiverId);
+  const { message, data, statusCode = 200 } = result;
+
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleGetMedia = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const receiverId = req.params.id;
+
+  const result = await getMedia(userId, receiverId);
+
   const { message, data, statusCode = 200 } = result;
 
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));

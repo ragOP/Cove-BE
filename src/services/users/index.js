@@ -382,3 +382,29 @@ exports.getAllOneToOneChats = async (userId, receiverId) => {
     statusCode: 200,
   };
 };
+
+exports.getMedia = async (userId, receiverId) => {
+  const chat = await OneToOneChat.findOne({
+    participants: { $all: [userId, receiverId] },
+    $expr: { $eq: [{ $size: '$participants' }, 2] },
+  });
+
+  if (!chat) {
+    return {
+      message: 'Chat not found',
+      data: null,
+      statusCode: 404,
+    };
+  }
+
+  const messages = await messageModel.find({
+    chat: chat._id,
+    type: { $in: ['image', 'video', 'audio', 'document', 'text-image'] },
+  }).populate('sender', 'name username profilePicture').populate('receiver', 'name username profilePicture');
+
+  return {
+    message: 'Media messages retrieved successfully',
+    data: messages,
+    statusCode: 200,
+  };
+};

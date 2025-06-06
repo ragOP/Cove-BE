@@ -13,6 +13,7 @@ const {
   handleGetPendingFriendRequests,
   handleUploadFiles,
   handleGetAllOneToOneChats,
+  handleGetMedia,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -371,4 +372,26 @@ router.route('/upload-files').post(user, upload.array('files', 10), handleUpload
  */
 
 router.route('/one-to-one-chat/:id').get(user, handleGetAllOneToOneChats);
+
+/**
+ * @swagger
+ * /api/user/one-to-one-chat/{id}/media:
+ *   get:
+ *     summary: Get media for a one-to-one chat
+ *     tags: [One-to-One Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200:
+ *         description: List of media for a one-to-one chat
+ */
+
+router.route('/one-to-one-chat/:id/media').get(user, handleGetMedia);
 module.exports = router;
