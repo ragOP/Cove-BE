@@ -13,6 +13,7 @@ const {
   uploadFiles,
   getAllOneToOneChats,
   getMedia,
+  getAllFriends,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -58,8 +59,6 @@ exports.handleSendFriendRequest = asyncHandler(async (req, res) => {
 
 exports.handleAcceptFriendRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
-
-  console.log(requestId);
 
   const result = await acceptFriendRequest(requestId);
   const { message, data, statusCode = 200 } = result;
@@ -134,6 +133,21 @@ exports.handleGetMedia = asyncHandler(async (req, res) => {
 
   const result = await getMedia(userId, receiverId);
 
+  const { message, data, statusCode = 200 } = result;
+
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleGetAllFriends = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { page = 1, per_page = 50, search = '' } = req.query;
+  const filters = {
+    search: search ? search.trim() : '',
+    page: parseInt(page, 10),
+    per_page: parseInt(per_page, 10),
+  };
+
+  const result = await getAllFriends(userId, filters);
   const { message, data, statusCode = 200 } = result;
 
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));

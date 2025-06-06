@@ -14,6 +14,7 @@ const {
   handleUploadFiles,
   handleGetAllOneToOneChats,
   handleGetMedia,
+  handleGetAllFriends,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -394,4 +395,26 @@ router.route('/one-to-one-chat/:id').get(user, handleGetAllOneToOneChats);
  */
 
 router.route('/one-to-one-chat/:id/media').get(user, handleGetMedia);
+
+/**
+ * @swagger
+ * /api/user/get-all-friends:
+ *   get:
+ *     summary: Get all friends for a user
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *           example: johndoe
+ *     responses:
+ *       200:
+ *         description: List of all friends
+ */
+
+router.route('/get-all-friends').get(user, handleGetAllFriends);
 module.exports = router;

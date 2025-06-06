@@ -258,7 +258,10 @@ exports.getAllChatsForUser = async (userId, filters) => {
       },
     })
     .skip(skip)
-    .limit(limit);
+    .limit(limit)
+    .sort({
+      lastMessage: -1,
+    });
 
   const chatResults = await Promise.all(
     chats.map(async chat => {
@@ -397,14 +400,46 @@ exports.getMedia = async (userId, receiverId) => {
     };
   }
 
-  const messages = await messageModel.find({
-    chat: chat._id,
-    type: { $in: ['image', 'video', 'audio', 'document', 'text-image'] },
-  }).populate('sender', 'name username profilePicture').populate('receiver', 'name username profilePicture');
+  const messages = await messageModel
+    .find({
+      chat: chat._id,
+      type: { $in: ['image', 'video', 'audio', 'document', 'text-image'] },
+    })
+    .populate('sender', 'name username profilePicture')
+    .populate('receiver', 'name username profilePicture');
 
   return {
     message: 'Media messages retrieved successfully',
     data: messages,
+    statusCode: 200,
+  };
+};
+
+exports.getAllFriends = async (userId, filters) => {
+  const { page = 1, per_page = 50, search = '' } = filters;
+  const skip = (parseInt(page) - 1) * parseInt(per_page);
+  const limit = parseInt(per_page);
+
+  const friends = await User.findById(userId).select('friends');
+
+  const friendsQuery = await User.find({
+    $or: [
+      { username: { $regex: search, $options: 'i' } },
+      { name: { $regex: search, $options: 'i' } },
+    ],
+    _id: { $in: friends.friends },
+  })
+    .select('name username profilePicture')
+    .skip(skip)
+    .limit(limit)
+    .sort({
+      name: 1,
+    })
+    .collation({ locale: 'en', strength: 2 });
+
+  return {
+    message: 'Friends retrieved successfully',
+    data: friendsQuery,
     statusCode: 200,
   };
 };

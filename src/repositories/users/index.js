@@ -43,15 +43,12 @@ exports.allMatchingSearch = async (query, currentUserId) => {
     ]
   });
 
-  console.log(pendingRequests);
 
   const userIdsWithPendingRequests = pendingRequests.reduce((acc, request) => {
     if (request.sender.toString() !== currentUserId) acc.push(request.sender);
     if (request.receiver.toString() !== currentUserId) acc.push(request.receiver);
     return acc;
   }, []);
-
-  console.log(userIdsWithPendingRequests);
 
   const currentUser = await User.findById(currentUserId);
   if (!currentUser) throw new Error('User not found');
