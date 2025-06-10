@@ -77,27 +77,27 @@ const initializeSocket = server => {
       lastSeen: new Date(),
     }).exec();
 
-    socket.on('private_message', async data => {
-      try {
-        const { receiverId, content, type = 'text', mediaUrl, duration, fileSize } = data;
+    // socket.on('private_message', async data => {
+    //   try {
+    //     const { receiverId, content, type = 'text', mediaUrl, duration, fileSize } = data;
 
-        const receiver = await User.findById(receiverId).select('socketId');
+    //     const receiver = await User.findById(receiverId).select('socketId');
 
-        if (receiver && receiver.socketId) {
-          io.to(receiver.socketId).emit('new_message', {
-            senderId: socket.user._id,
-            content,
-            type,
-            // mediaUrl,
-            // duration,
-            // fileSize,
-            timestamp: new Date(),
-          });
-        }
-      } catch (error) {
-        console.error('Error sending private message:', error);
-      }
-    });
+    //     if (receiver && receiver.socketId) {
+    //       io.to(receiver.socketId).emit('new_message', {
+    //         senderId: socket.user._id,
+    //         content,
+    //         type,
+    //         // mediaUrl,
+    //         // duration,
+    //         // fileSize,
+    //         timestamp: new Date(),
+    //       });
+    //     }
+    //   } catch (error) {
+    //     console.error('Error sending private message:', error);
+    //   }
+    // });
 
     socket.on('typing_status', async data => {
       try {

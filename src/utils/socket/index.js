@@ -1,3 +1,5 @@
+const { getIO } = require("../../config/socket");
+
 const emittedMessages = new Set();
 
 exports.emitNewMessage = async (message, chat, receiverId) => {
