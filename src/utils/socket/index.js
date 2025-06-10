@@ -1,4 +1,5 @@
 const { getIO } = require("../../config/socket");
+const User = require("../../models/userModel");
 
 const emittedMessages = new Set();
 
