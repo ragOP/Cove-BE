@@ -22,29 +22,7 @@ const { decrypt } = require('../../utils/encryption');
 const messageModel = require('../../models/messageModel');
 const { findPendingFriendRequestBySender } = require('../../repositories/users/index');
 const { getIO } = require('../../config/socket');
-
-const emittedMessages = new Set();
-
-const emitNewMessage = async (message, chat, receiverId) => {
-  const messageId = message._id.toString();
-  if (emittedMessages.has(messageId)) {
-    console.log(`Message ${messageId} already emitted, skipping duplicate emission`);
-    return;
-  }
-
-  const io = getIO();
-  const receiver = await User.findById(receiverId).select('socketId');
-  if (receiver && receiver.socketId) {
-    io.to(receiver.socketId).emit('new_message', {
-      ...message.toObject(),
-      chat: chat._id
-    });
-    emittedMessages.add(messageId);
-    setTimeout(() => {
-      emittedMessages.delete(messageId);
-    }, 5 * 60 * 1000);
-  }
-};
+const { emitNewMessage } = require('../../utils/socket');
 
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
