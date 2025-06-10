@@ -21,6 +21,7 @@ const { encrypt } = require('../../utils/encryption');
 const { decrypt } = require('../../utils/encryption');
 const messageModel = require('../../models/messageModel');
 const { findPendingFriendRequestBySender } = require('../../repositories/users/index');
+const { getIO } = require('../../config/socket');
 
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
@@ -180,8 +181,6 @@ exports.sendMessageService = async ({
   duration,
   fileSize,
 }) => {
-  // const encryptedContent = content ? encrypt(content) : null;
-  // const encryptedMediaUrl = mediaUrl ? encrypt(mediaUrl) : null;
   let chat = await getOneToOneChatByParticipants(senderId, receiverId);
 
   let isFriends = await checkExistingRequest(senderId, receiverId);
@@ -192,6 +191,7 @@ exports.sendMessageService = async ({
       statusCode: 403,
     };
   }
+  
   if (!chat) {
     await createNewFriendRequest(senderId, receiverId);
     chat = await createOneToOneChat(senderId, receiverId);
@@ -206,12 +206,23 @@ exports.sendMessageService = async ({
       fileSize,
     });
 
+    // Emit socket event for new message
+    const io = getIO();
+    const receiver = await User.findById(receiverId).select('socketId');
+    if (receiver && receiver.socketId) {
+      io.to(receiver.socketId).emit('new_message', {
+        ...message.toObject(),
+        chat: chat._id
+      });
+    }
+
     return {
       message: 'Follow request sent. Message sent with request.',
       data: message,
       statusCode: 202,
     };
   }
+  
   const message = await createMessageAndAddToChat(chat, {
     senderId,
     receiverId,
@@ -221,6 +232,16 @@ exports.sendMessageService = async ({
     duration,
     fileSize,
   });
+
+  // Emit socket event for new message
+  const io = getIO();
+  const receiver = await User.findById(receiverId).select('socketId');
+  if (receiver && receiver.socketId) {
+    io.to(receiver.socketId).emit('new_message', {
+      ...message.toObject(),
+      chat: chat._id
+    });
+  }
 
   return {
     message: 'Message sent successfully',
@@ -453,6 +474,7 @@ exports.readChat = async (userId, chatId) => {
       statusCode: 404,
     };
   }
+  
   const messages = await messageModel.find({ chat: chatId });
   const unreadMessages = messages.filter(
     message => message.receiver.toString() === userId.toString() && message.status === 'sent'
@@ -467,7 +489,23 @@ exports.readChat = async (userId, chatId) => {
     { chat: chatId, receiver: userId },
     { status: 'read' }
   );
+
   if (result) {
+    // Emit socket events for read messages
+    const io = getIO();
+    const otherParticipant = chat.participants.find(p => p.toString() !== userId.toString());
+    const sender = await User.findById(otherParticipant).select('socketId');
+    
+    if (sender && sender.socketId) {
+      unreadMessages.forEach(message => {
+        io.to(sender.socketId).emit('message_read_update', {
+          messageId: message._id,
+          chatId: chatId,
+          readBy: userId
+        });
+      });
+    }
+
     return {
       message: 'Chat read successfully',
       data: { unreadCount, readCount },

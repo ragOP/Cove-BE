@@ -2,11 +2,12 @@ require('dotenv').config();
 const http = require('http');
 const app = require('./app');
 const { connectToDatabase } = require('./config/db');
+const { initializeSocket } = require('./config/socket');
 
 const { MONGODB_URI } = process.env;
 
 const { NODE_ENV } = process.env;
-const PORT = process.env.PORT || 5001
+const PORT = process.env.PORT || 5000
 
 // Check if required environment variables are set
 if (!MONGODB_URI || !NODE_ENV || !PORT) {
@@ -23,6 +24,9 @@ connectToDatabase(MONGODB_URI);
 
 // Start the server
 const server = http.createServer(app);
+
+// Initialize Socket.IO
+initializeSocket(server);
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
