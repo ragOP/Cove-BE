@@ -23,6 +23,29 @@ const messageModel = require('../../models/messageModel');
 const { findPendingFriendRequestBySender } = require('../../repositories/users/index');
 const { getIO } = require('../../config/socket');
 
+const emittedMessages = new Set();
+
+const emitNewMessage = async (message, chat, receiverId) => {
+  const messageId = message._id.toString();
+  if (emittedMessages.has(messageId)) {
+    console.log(`Message ${messageId} already emitted, skipping duplicate emission`);
+    return;
+  }
+
+  const io = getIO();
+  const receiver = await User.findById(receiverId).select('socketId');
+  if (receiver && receiver.socketId) {
+    io.to(receiver.socketId).emit('new_message', {
+      ...message.toObject(),
+      chat: chat._id
+    });
+    emittedMessages.add(messageId);
+    setTimeout(() => {
+      emittedMessages.delete(messageId);
+    }, 5 * 60 * 1000);
+  }
+};
+
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
   const imagUrl = filePath ? await uploadSingleFile(filePath, 'images') : null;
@@ -206,15 +229,7 @@ exports.sendMessageService = async ({
       fileSize,
     });
 
-    // Emit socket event for new message
-    const io = getIO();
-    const receiver = await User.findById(receiverId).select('socketId');
-    if (receiver && receiver.socketId) {
-      io.to(receiver.socketId).emit('new_message', {
-        ...message.toObject(),
-        chat: chat._id
-      });
-    }
+    await emitNewMessage(message, chat, receiverId);
 
     return {
       message: 'Follow request sent. Message sent with request.',
@@ -233,15 +248,7 @@ exports.sendMessageService = async ({
     fileSize,
   });
 
-  // Emit socket event for new message
-  const io = getIO();
-  const receiver = await User.findById(receiverId).select('socketId');
-  if (receiver && receiver.socketId) {
-    io.to(receiver.socketId).emit('new_message', {
-      ...message.toObject(),
-      chat: chat._id
-    });
-  }
+  await emitNewMessage(message, chat, receiverId);
 
   return {
     message: 'Message sent successfully',
