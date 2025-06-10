@@ -25,7 +25,9 @@ const messageSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: true,
+      required: function () {
+        return this.type === 'text' || this.type === 'text-image';
+      },
     },
     mediaUrl: {
       type: String,

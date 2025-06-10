@@ -28,8 +28,7 @@ exports.validateSendMessage = [
     .withMessage('Invalid receiver ID format'),
 
   body('content')
-    .notEmpty()
-    .withMessage('Message content is required')
+    .optional()
     .isString()
     .withMessage('Message content must be a string'),
 

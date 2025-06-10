@@ -145,10 +145,17 @@ exports.createMessageAndAddToChat = async (
   const messageData = {
     sender: senderId,
     receiver: receiverId,
-    content,
     type,
     chat: chat._id,
   };
+
+  if (content) {
+    messageData.content = content;
+  }
+
+  if (type === 'image') {
+    messageData.mediaUrl = mediaUrl;
+  }
 
   if (type === 'text-image') {
     messageData.mediaUrl = mediaUrl;
@@ -169,10 +176,20 @@ exports.createMessageAndAddToChat = async (
   chat.lastMessage = message._id;
   await chat.save();
 
+  console.log('messageData', messageData);
+
   const populatedMessage = await messageModel
     .findById(message._id)
     .populate('sender', 'name username profilePicture')
     .populate('receiver', 'name username profilePicture');
+
+  console.log('populatedMessage', populatedMessage);
+
+  if (type === 'text-image') {
+    console.log('mediaUrl', mediaUrl);
+  }
+
+  return;
 
   return populatedMessage;
 };
