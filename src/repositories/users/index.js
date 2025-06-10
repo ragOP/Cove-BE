@@ -182,14 +182,6 @@ exports.createMessageAndAddToChat = async (
     .findById(message._id)
     .populate('sender', 'name username profilePicture')
     .populate('receiver', 'name username profilePicture');
-
-  console.log('populatedMessage', populatedMessage);
-
-  if (type === 'text-image') {
-    console.log('mediaUrl', mediaUrl);
-  }
-
-  return;
-
+    
   return populatedMessage;
 };
