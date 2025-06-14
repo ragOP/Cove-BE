@@ -65,8 +65,21 @@ const initializeSocket = server => {
     if (socket.user) return;
   });
 
-  io.on('connection', socket => {
+  io.on('connection', async socket => {
     socket.join(socket.user._id.toString());
+
+    const user = await User.findById(socket.user._id).select('friends');
+    if (!user) return;
+
+    const friends = user.friends;
+
+    friends.forEach(friendId => {
+      io.to(friendId.toString()).emit('get_user_info', {
+        userId: socket.user._id,
+        lastSeen: new Date(),
+        isOnline: true,
+      });
+    });
 
     socket.on('join_chat', async data => {
       const { chatId } = data;
@@ -174,21 +187,20 @@ const initializeSocket = server => {
         });
         const user = await User.findById(socket.user._id).select('friends');
         if (!user) return;
-    
+
         const friends = user.friends;
-    
+
         friends.forEach(friendId => {
           io.to(friendId.toString()).emit('get_user_info', {
             userId: socket.user._id,
             lastSeen: new Date(),
-            isOnline: true
+            isOnline: true,
           });
         });
       } catch (error) {
         console.error('Error handling disconnect:', error);
       }
     });
-    
   });
 
   return io;
