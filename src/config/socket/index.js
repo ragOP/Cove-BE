@@ -66,12 +66,15 @@ const initializeSocket = server => {
   });
 
   io.on('connection', socket => {
-    socket.on('join_chat', async chatId => {
+    socket.join(socket.user._id.toString());
+
+    socket.on('join_chat', async data => {
+      const { chatId, receiverId } = data;
       socket.join(chatId.toString());
+      const user = await User.findById(receiverId).select('isOnline lastSeen');
       socket.emit('get_my_info', {
-        userId: socket.user._id,
-        socketId: socket.id,
-        isOnline: true,
+        isOnline: user.isOnline,
+        lastSeen: user.lastSeen,
       });
     });
 
@@ -144,20 +147,11 @@ const initializeSocket = server => {
       }
     });
 
-    socket.on('typing_status', async data => {
-      try {
-        const { receiverId, isTyping } = data;
-        const receiver = await User.findById(receiverId).select('socketId');
-
-        if (receiver && receiver.socketId) {
-          io.to(receiver.socketId).emit('typing_status_update', {
-            senderId: socket.user._id,
-            isTyping,
-          });
-        }
-      } catch (error) {
-        console.error('Error updating typing status:', error);
-      }
+    socket.on('typing_status', ({ receiverId, isTyping }) => {
+      io.to(receiverId.toString()).emit('typing_status_update', {
+        senderId: socket.user._id,
+        isTyping,
+      });
     });
 
     socket.on('message_read', async data => {
