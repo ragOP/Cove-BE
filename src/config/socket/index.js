@@ -66,16 +66,13 @@ const initializeSocket = server => {
   });
 
   io.on('connection', socket => {
-    socket.on('get_my_info', () => {
-      socket.emit('user_info', {
+    socket.on('join_chat', async chatId => {
+      socket.join(chatId.toString());
+      socket.emit('get_my_info', {
         userId: socket.user._id,
         socketId: socket.id,
         isOnline: true,
       });
-    });
-
-    socket.on('join_chat', async chatId => {
-      socket.join(chatId.toString());
     });
 
     socket.on('leave_chat', async chatId => {
