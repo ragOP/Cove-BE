@@ -5,7 +5,7 @@ const messageModel = require('../../models/messageModel');
 
 const emittedMessages = new Set();
 
-exports.emitNewMessage = async (message, chat, receiverId) => {
+exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
   const messageId = message._id.toString();
   if (emittedMessages.has(messageId)) {
     console.log(`Message ${messageId} already emitted, skipping duplicate emission`);
@@ -79,7 +79,7 @@ exports.emitNewMessage = async (message, chat, receiverId) => {
     data: receiverChatResults,
   });
 
-  const senderChats = await OneToOneChat.find({ participants: socket.user._id })
+  const senderChats = await OneToOneChat.find({ participants: senderId })
     .populate('participants', 'name username profilePicture')
     .populate({
       path: 'lastMessage',
@@ -96,13 +96,13 @@ exports.emitNewMessage = async (message, chat, receiverId) => {
     senderChats.map(async chat => {
       const unreadCount = await messageModel.countDocuments({
         chat: chat._id,
-        receiver: socket.user._id,
+        receiver: senderId,
         status: 'sent',
       });
       const otherParticipant = chat.participants.filter(
-        p => p._id.toString() !== socket.user._id.toString()
+        p => p._id.toString() !== senderId.toString()
       );
-      const isFriend = await User.findById(socket.user._id).then(user =>
+      const isFriend = await User.findById(senderId).then(user =>
         user.friends.includes(otherParticipant[0]._id)
       );
       return {
@@ -115,10 +115,13 @@ exports.emitNewMessage = async (message, chat, receiverId) => {
     })
   );
 
-  socket.emit('chat_list_update', {
-    success: true,
-    data: senderChatResults,
-  });
+  const sender = await User.findById(senderId).select('socketId');
+  if (sender && sender.socketId) {
+    io.to(sender.socketId).emit('chat_list_update', {
+      success: true,
+      data: senderChatResults,
+    });
+  }
   setTimeout(() => {
     emittedMessages.delete(messageId);
   }, 60 * 1000);

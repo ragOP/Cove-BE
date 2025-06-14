@@ -208,7 +208,7 @@ exports.sendMessageService = async ({
       fileSize,
     });
 
-    await emitNewMessage(message, chat, receiverId);
+    await emitNewMessage(message, chat, receiverId, senderId);
 
     return {
       message: 'Follow request sent. Message sent with request.',
@@ -227,7 +227,7 @@ exports.sendMessageService = async ({
     fileSize,
   });
 
-  await emitNewMessage(message, chat, receiverId);
+  await emitNewMessage(message, chat, receiverId, senderId);
 
   return {
     message: 'Message sent successfully',
