@@ -16,9 +16,13 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
   const receiver = await User.findById(receiverId).select('socketId');
 
   const isReceiverOnline = receiver && receiver.socketId;
+  console.log('isReceiverOnline', isReceiverOnline);
   const chatRoomId = chat._id.toString();
-  const isReceiverInChat =
-    isReceiverOnline && io.sockets.adapter.rooms.get(chatRoomId)?.has(receiver.socketId);
+  console.log('chatRoomId', chatRoomId);
+  const room = io.sockets.adapter.rooms.get(chatRoomId);
+  console.log('room', room);
+  const isReceiverInChat = isReceiverOnline && room?.has(receiver.socketId.toString());
+  console.log('isReceiverInChat', isReceiverInChat);
 
   if (isReceiverInChat) {
     message.status = 'read';

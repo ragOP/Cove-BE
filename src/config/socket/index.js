@@ -69,15 +69,8 @@ const initializeSocket = server => {
     socket.join(socket.user._id.toString());
 
     socket.on('join_chat', async data => {
-      const { chatId, receiverId } = data;
+      const { chatId } = data;
       if (chatId) socket.join(chatId.toString());
-      if (receiverId) {
-        const user = await User.findById(receiverId).select('isOnline lastSeen');
-        socket.emit('get_user_info', {
-          isOnline: user.isOnline,
-          lastSeen: user.lastSeen,
-        });
-      }
     });
 
     socket.on('leave_chat', async chatId => {
@@ -172,17 +165,30 @@ const initializeSocket = server => {
       }
     });
 
-    socket.on('disconnect', () => {
-      User.findByIdAndUpdate(socket.user._id, {
-        isOnline: false,
-        socketId: null,
-        lastSeen: new Date(),
-      }).exec();
-      socket.emit('get_user_info', {
-        isOnline: false,
-        lastSeen: new Date(),
-      });
+    socket.on('disconnect', async () => {
+      try {
+        await User.findByIdAndUpdate(socket.user._id, {
+          isOnline: false,
+          socketId: null,
+          lastSeen: new Date(),
+        });
+        const user = await User.findById(socket.user._id).select('friends');
+        if (!user) return;
+    
+        const friends = user.friends;
+    
+        friends.forEach(friendId => {
+          io.to(friendId.toString()).emit('get_user_info', {
+            userId: socket.user._id,
+            lastSeen: new Date(),
+            isOnline: true
+          });
+        });
+      } catch (error) {
+        console.error('Error handling disconnect:', error);
+      }
     });
+    
   });
 
   return io;
