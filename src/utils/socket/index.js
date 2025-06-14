@@ -38,7 +38,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
     chat: chat._id,
   });
   emittedMessages.add(messageId);
-  const receiverChats = await OneToOneChat.find({ participants: receiverId })
+  const receiverChats = await OneToOneChat.find({ participants: { $in: [receiverId, senderId] } })
     .populate('participants', 'name username profilePicture')
     .populate({
       path: 'lastMessage',
@@ -79,7 +79,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
     data: receiverChatResults,
   });
 
-  const senderChats = await OneToOneChat.find({ participants: senderId })
+  const senderChats = await OneToOneChat.find({ participants: { $in: [receiverId, senderId] } })
     .populate('participants', 'name username profilePicture')
     .populate({
       path: 'lastMessage',
