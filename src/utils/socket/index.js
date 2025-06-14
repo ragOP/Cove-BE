@@ -17,7 +17,8 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
 
   const isReceiverOnline = receiver && receiver.socketId;
   const chatRoomId = chat._id.toString();
-  const isReceiverInChat = isReceiverOnline && io.sockets.adapter.rooms.get(chatRoomId)?.has(receiver.socketId);
+  const isReceiverInChat =
+    isReceiverOnline && io.sockets.adapter.rooms.get(chatRoomId)?.has(receiver.socketId);
 
   if (isReceiverInChat) {
     message.status = 'read';
@@ -38,7 +39,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
     chat: chat._id,
   });
   emittedMessages.add(messageId);
-  const receiverChats = await OneToOneChat.find({ participants: { $in: [receiverId, senderId] } })
+  const receiverChats = await OneToOneChat.find({ participants: { $all: [receiverId, senderId] } })
     .populate('participants', 'name username profilePicture')
     .populate({
       path: 'lastMessage',
@@ -79,7 +80,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
     data: receiverChatResults,
   });
 
-  const senderChats = await OneToOneChat.find({ participants: { $in: [receiverId, senderId] } })
+  const senderChats = await OneToOneChat.find({ participants: { $all: [receiverId, senderId] } })
     .populate('participants', 'name username profilePicture')
     .populate({
       path: 'lastMessage',
