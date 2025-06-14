@@ -82,8 +82,13 @@ const initializeSocket = server => {
     });
 
     socket.on('join_chat', async data => {
-      const { chatId } = data;
+      const { chatId, receiverId } = data;
       if (chatId) socket.join(chatId.toString());
+      io.to(receiverId.toString()).emit('get_user_info', {
+        userId: socket.user._id,
+        lastSeen: new Date(),
+        isOnline: true,
+      });
     });
 
     socket.on('leave_chat', async chatId => {
