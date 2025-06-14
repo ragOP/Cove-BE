@@ -178,6 +178,10 @@ const initializeSocket = server => {
         socketId: null,
         lastSeen: new Date(),
       }).exec();
+      socket.emit('get_user_info', {
+        isOnline: false,
+        lastSeen: new Date(),
+      });
     });
   });
 
