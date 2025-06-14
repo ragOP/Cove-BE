@@ -189,6 +189,7 @@ exports.createMessageAndAddToChat = async (
 exports.getSentFriendRequests = async userId => {
   const requests = await FriendRequest.find({
     sender: userId,
+    status: 'pending',
   }).populate('receiver', 'name username profilePicture');
   return requests;
 };
