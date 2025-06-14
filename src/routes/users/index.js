@@ -16,6 +16,7 @@ const {
   handleGetMedia,
   handleGetAllFriends,
   handleReadChat,
+  handleGetAllSentFriendRequests,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -194,6 +195,19 @@ router.patch('/friend-requests/:requestId/accept', user, handleAcceptFriendReque
  *         description: List of pending friend requests
  */
 router.get('/friend-requests/pending', user, handleGetPendingFriendRequests);
+/**
+ * @swagger
+ * /api/user/friend-requests/sent:
+ *   get:
+ *     summary: Get all sent friend requests
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all sent friend requests
+ */
+router.get('/friend-requests/sent', user, handleGetAllSentFriendRequests);
 /**
  * @swagger
  * /api/user/messages/send-message:

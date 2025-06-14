@@ -15,6 +15,7 @@ const {
   getMedia,
   getAllFriends,
   readChat,
+  getSentFriendRequests,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -162,4 +163,11 @@ exports.handleReadChat = asyncHandler(async (req, res) => {
   const { message, data, statusCode = 200 } = result;
 
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleGetAllSentFriendRequests = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const requests = await getSentFriendRequests(userId);
+  const { message, data, statusCode = 200 } = requests;
+  return res.status(200).json(new ApiResponse(statusCode, data, message));
 });

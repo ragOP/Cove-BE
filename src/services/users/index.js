@@ -15,6 +15,7 @@ const {
   addFriends,
   checkOneToOneChatExists,
   getPendingFriendRequests,
+  getSentFriendRequests,
 } = require('../../repositories/users');
 const User = require('../../models/userModel');
 const { encrypt } = require('../../utils/encryption');
@@ -503,4 +504,13 @@ exports.readChat = async (userId, chatId) => {
       statusCode: 500,
     };
   }
+};
+
+exports.getSentFriendRequests = async userId => {
+  const requests = await getSentFriendRequests(userId);
+  return {
+    message: 'Sent friend requests retrieved successfully',
+    data: requests,
+    statusCode: 200,
+  };
 };
