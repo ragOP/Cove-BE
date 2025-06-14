@@ -70,12 +70,14 @@ const initializeSocket = server => {
 
     socket.on('join_chat', async data => {
       const { chatId, receiverId } = data;
-      socket.join(chatId.toString());
-      const user = await User.findById(receiverId).select('isOnline lastSeen');
-      socket.emit('get_my_info', {
-        isOnline: user.isOnline,
-        lastSeen: user.lastSeen,
-      });
+      if (chatId) socket.join(chatId.toString());
+      if (receiverId) {
+        const user = await User.findById(receiverId).select('isOnline lastSeen');
+        socket.emit('get_user_info', {
+          isOnline: user.isOnline,
+          lastSeen: user.lastSeen,
+        });
+      }
     });
 
     socket.on('leave_chat', async chatId => {
