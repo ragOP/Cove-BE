@@ -73,70 +73,79 @@ const initializeSocket = server => {
         isOnline: true,
       });
     });
+
+    socket.on('join_chat', async chatId => {
+      socket.join(chatId.toString());
+    });
+
+    socket.on('leave_chat', async chatId => {
+      socket.leave(chatId.toString());
+    });
+
     User.findByIdAndUpdate(socket.user._id, {
       isOnline: true,
       socketId: socket.id,
       lastSeen: new Date(),
     }).exec();
 
-    socket.on('recieve_message_onChatList', async (data) => {
+    socket.on('recieve_message_onChatList', async data => {
       const { userId } = data;
       try {
         const chats = await OneToOneChat.find({ participants: userId })
-        .populate('participants', 'name username profilePicture')
-        .populate({
-          path: 'lastMessage',
-          populate: {
-            path: 'sender',
-            select: 'name username profilePicture',
-          },
-        })
-        .skip(skip)
-        .limit(limit)
-        .sort({
-          lastMessage: -1,
-        });
-    
-      const chatResults = await Promise.all(
-        chats.map(async chat => {
-          const unreadCount = await messageModel.countDocuments({
-            chat: chat._id,
-            receiver: userId,
-            status: 'sent',
+          .populate('participants', 'name username profilePicture')
+          .populate({
+            path: 'lastMessage',
+            populate: {
+              path: 'sender',
+              select: 'name username profilePicture',
+            },
+          })
+          .skip(skip)
+          .limit(limit)
+          .sort({
+            lastMessage: -1,
           });
-          const messages = await messageModel.find({ chat: chat._id }).sort({ createdAt: -1 });
-          const otherParticipant = chat.participants.filter(
-            p => p._id.toString() !== userId.toString()
-          );
-          const isFriend = await User.findById(userId).then(user =>
-            user.friends.includes(otherParticipant[0]._id)
-          );
-          return {
-            ...chat.toObject(),
-            lastMessage: chat.lastMessage,
-            unreadCount,
-            isFriend,
-            messages: messages.map(message => ({
-              ...message.toObject(),
-              content: message.content,
-              mediaUrl: message.mediaUrl,
-            })),
-            chatWith: otherParticipant,
-          };
-        })
-      );
-      socket.emit('chat_list_update', {
-        success: true,
-        data: chatResults
-      });
-      }catch(error) {
+
+        const chatResults = await Promise.all(
+          chats.map(async chat => {
+            const unreadCount = await messageModel.countDocuments({
+              chat: chat._id,
+              receiver: userId,
+              status: 'sent',
+            });
+            const messages = await messageModel.find({ chat: chat._id }).sort({ createdAt: -1 });
+            const otherParticipant = chat.participants.filter(
+              p => p._id.toString() !== userId.toString()
+            );
+            const isFriend = await User.findById(userId).then(user =>
+              user.friends.includes(otherParticipant[0]._id)
+            );
+            return {
+              ...chat.toObject(),
+              lastMessage: chat.lastMessage,
+              unreadCount,
+              isFriend,
+              messages: messages.map(message => ({
+                ...message.toObject(),
+                content: message.content,
+                mediaUrl: message.mediaUrl,
+              })),
+              chatWith: otherParticipant,
+            };
+          })
+        );
+        socket.emit('chat_list_update', {
+          success: true,
+          data: chatResults,
+        });
+      } catch (error) {
         console.error('Error recieving message on chat list:', error);
         socket.emit('chat_list_update', {
           success: false,
-          error: 'Error fetching chat list'
+          error: 'Error fetching chat list',
         });
       }
-    })
+    });
 
     socket.on('typing_status', async data => {
       try {
