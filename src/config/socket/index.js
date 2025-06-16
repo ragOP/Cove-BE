@@ -14,7 +14,7 @@ const initializeSocket = server => {
       allowedHeaders: ['*'],
       credentials: true,
     },
-    transports: ['websocket', 'polling'],
+    transports: ['websocket'],
     pingTimeout: 60000,
     pingInterval: 25000,
     path: '/socket.io/',
