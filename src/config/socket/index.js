@@ -10,7 +10,7 @@ const initializeSocket = server => {
   io = socketIo(server, {
     cors: {
       origin: '*',
-      methods: ['GET', 'POST'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
       allowedHeaders: ['*'],
       credentials: true,
     },
@@ -66,41 +66,87 @@ const initializeSocket = server => {
   });
 
   io.on('connection', async socket => {
+    // Join user's personal room
     socket.join(socket.user._id.toString());
 
-    const user = await User.findById(socket.user._id).select('friends');
-    if (!user) return;
-
-    const friends = user.friends;
-
-    friends.forEach(friendId => {
-      io.to(friendId.toString()).emit('get_user_info', {
-        userId: socket.user._id,
-        lastSeen: new Date(),
-        isOnline: true,
-      });
+    // Update user's online status and socket ID
+    await User.findByIdAndUpdate(socket.user._id, {
+      isOnline: true,
+      socketId: socket.id,
+      lastSeen: new Date(),
     });
 
+    // Notify friends about user's online status
+    const user = await User.findById(socket.user._id).select('friends');
+    if (user) {
+      user.friends.forEach(friendId => {
+        const friendSocket = io.sockets.adapter.rooms.get(friendId.toString());
+        if (friendSocket) {
+          io.to(friendId.toString()).emit('get_user_info', {
+            userId: socket.user._id,
+            lastSeen: new Date(),
+            isOnline: true,
+          });
+        }
+      });
+    }
+
+    // Handle joining a chat room
     socket.on('join_chat', async data => {
       const { chatId, receiverId } = data;
-      if (chatId) socket.join(chatId.toString());
-      io.to(receiverId.toString()).emit('get_user_info', {
-        userId: socket.user._id,
-        lastSeen: new Date(),
-        isOnline: true,
-      });
+      if (chatId) {
+        socket.join(chatId.toString());
+      }
+      // Notify only the receiver about user's online status
+      if (receiverId) {
+        const receiverSocket = io.sockets.adapter.rooms.get(receiverId.toString());
+        if (receiverSocket) {
+          io.to(receiverId.toString()).emit('get_user_info', {
+            userId: socket.user._id,
+            lastSeen: new Date(),
+            isOnline: true,
+          });
+        }
+      }
     });
 
+    // Handle leaving a chat room
     socket.on('leave_chat', async chatId => {
       socket.leave(chatId.toString());
     });
 
-    User.findByIdAndUpdate(socket.user._id, {
-      isOnline: true,
-      socketId: socket.id,
-      lastSeen: new Date(),
-    }).exec();
+    // Handle typing status
+    socket.on('typing_status', ({ receiverId, isTyping }) => {
+      // Only emit typing status to the receiver
+      if (receiverId) {
+        const receiverSocket = io.sockets.adapter.rooms.get(receiverId.toString());
+        if (receiverSocket) {
+          io.to(receiverId.toString()).emit('typing_status_update', {
+            senderId: socket.user._id,
+            isTyping,
+          });
+        }
+      }
+    });
 
+    // Handle message read status
+    socket.on('message_read', async data => {
+      try {
+        const { senderId, messageId } = data;
+        const sender = await User.findById(senderId).select('socketId');
+
+        if (sender && sender.socketId) {
+          io.to(sender.socketId).emit('message_read_update', {
+            messageId,
+            readBy: socket.user._id,
+          });
+        }
+      } catch (error) {
+        console.error('Error updating read receipt:', error);
+      }
+    });
+
+    // Handle chat list updates
     socket.on('recieve_message_onChatList', async data => {
       const { userId } = data;
       try {
@@ -113,8 +159,6 @@ const initializeSocket = server => {
               select: 'name username profilePicture',
             },
           })
-          .skip(skip)
-          .limit(limit)
           .sort({
             lastMessage: -1,
           });
@@ -147,12 +191,13 @@ const initializeSocket = server => {
             };
           })
         );
+        // Only emit to the requesting user
         socket.emit('chat_list_update', {
           success: true,
           data: chatResults,
         });
       } catch (error) {
-        console.error('Error recieving message on chat list:', error);
+        console.error('Error receiving message on chat list:', error);
         socket.emit('chat_list_update', {
           success: false,
           error: 'Error fetching chat list',
@@ -160,29 +205,7 @@ const initializeSocket = server => {
       }
     });
 
-    socket.on('typing_status', ({ receiverId, isTyping }) => {
-      io.to(receiverId.toString()).emit('typing_status_update', {
-        senderId: socket.user._id,
-        isTyping,
-      });
-    });
-
-    socket.on('message_read', async data => {
-      try {
-        const { senderId, messageId } = data;
-        const sender = await User.findById(senderId).select('socketId');
-
-        if (sender && sender.socketId) {
-          io.to(sender.socketId).emit('message_read_update', {
-            messageId,
-            readBy: socket.user._id,
-          });
-        }
-      } catch (error) {
-        console.error('Error updating read receipt:', error);
-      }
-    });
-
+    // Handle disconnection
     socket.on('disconnect', async () => {
       try {
         await User.findByIdAndUpdate(socket.user._id, {
@@ -190,18 +213,20 @@ const initializeSocket = server => {
           socketId: null,
           lastSeen: new Date(),
         });
+
         const user = await User.findById(socket.user._id).select('friends');
-        if (!user) return;
-
-        const friends = user.friends;
-
-        friends.forEach(friendId => {
-          io.to(friendId.toString()).emit('get_user_info', {
-            userId: socket.user._id,
-            lastSeen: new Date(),
-            isOnline: true,
+        if (user) {
+          user.friends.forEach(friendId => {
+            const friendSocket = io.sockets.adapter.rooms.get(friendId.toString());
+            if (friendSocket) {
+              io.to(friendId.toString()).emit('get_user_info', {
+                userId: socket.user._id,
+                lastSeen: new Date(),
+                isOnline: false,
+              });
+            }
           });
-        });
+        }
       } catch (error) {
         console.error('Error handling disconnect:', error);
       }

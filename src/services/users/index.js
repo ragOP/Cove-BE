@@ -483,6 +483,7 @@ exports.readChat = async (userId, chatId) => {
     const sender = await User.findById(otherParticipant).select('socketId');
     
     if (sender && sender.socketId) {
+      // Emit only to the specific sender's socket for each unread message
       unreadMessages.forEach(message => {
         io.to(sender.socketId).emit('message_read_update', {
           messageId: message._id,
