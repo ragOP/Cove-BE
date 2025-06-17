@@ -189,7 +189,9 @@ exports.checkPhoneNumbers = asyncHandler(async (req, res) => {
   phoneNumbers.forEach(num => {
     result[num] = foundNumbers.has(num);
   });
-  return res.status(200).json(result);
+  const statusCode = 200;
+  const message = 'Phone number check completed successfully.';
+  return res.status(200).json(new ApiResponse(statusCode, result, message));
 });
 
 exports.handleGetSuggestedUsers = asyncHandler(async (req, res) => {
