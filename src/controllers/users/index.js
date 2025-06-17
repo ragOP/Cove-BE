@@ -187,6 +187,8 @@ exports.checkPhoneNumbers = asyncHandler(async (req, res) => {
   phoneNumbers.forEach(num => {
     result[num] = foundNumbers.has(num);
   });
+  const statusCode = 200;
+  const message = 'Phone number check completed successfully.';
   return res.status(200).json(new ApiResponse(statusCode, result, message));
 });
 
