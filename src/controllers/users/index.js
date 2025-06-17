@@ -179,15 +179,18 @@ exports.checkPhoneNumbers = asyncHandler(async (req, res) => {
   if (!Array.isArray(phoneNumbers)) {
     return res.status(400).json({ success: false, message: 'Payload must be an array of phone numbers.' });
   }
-  phoneNumbers = phoneNumbers.map(num => {
+  const coreNumbers = phoneNumbers.map(num => {
     num = num.toString().replace(/\s+/g, '');
     return num.startsWith('91') ? num.slice(2) : num;
   });
-  const users = await User.find({ phoneNumber: { $in: phoneNumbers } }).select('phoneNumber');
+  const users = await User.find({ phoneNumber: { $in: coreNumbers } }).select('phoneNumber');
   const foundNumbers = new Set(users.map(u => u.phoneNumber));
   const result = {};
+
   phoneNumbers.forEach(num => {
-    result[num] = foundNumbers.has(num);
+    let core = num.toString().replace(/\s+/g, '');
+    core = core.startsWith('91') ? core.slice(2) : core;
+    result['91' + core] = foundNumbers.has(core);
   });
   const statusCode = 200;
   const message = 'Phone number check completed successfully.';
