@@ -175,7 +175,7 @@ exports.handleGetAllSentFriendRequests = asyncHandler(async (req, res) => {
 });
 
 exports.checkPhoneNumbers = asyncHandler(async (req, res) => {
-  let phoneNumbers = req.body;
+  let phoneNumbers = req.body.contacts;
   if (!Array.isArray(phoneNumbers)) {
     return res.status(400).json({ success: false, message: 'Payload must be an array of phone numbers.' });
   }
