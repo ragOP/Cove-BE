@@ -19,6 +19,7 @@ const {
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
+const User = require('../../models/userModel');
 
 exports.handleUserProfileUpdate = asyncHandler(async (req, res) => {
   const { id } = req.user;
@@ -170,4 +171,20 @@ exports.handleGetAllSentFriendRequests = asyncHandler(async (req, res) => {
   const requests = await getSentFriendRequests(userId);
   const { message, data, statusCode = 200 } = requests;
   return res.status(200).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.checkPhoneNumbers = asyncHandler(async (req, res) => {
+  const phoneNumbers = req.body;
+  if (!Array.isArray(phoneNumbers)) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'Payload must be an array of phone numbers.' });
+  }
+  const users = await User.find({ phoneNumber: { $in: phoneNumbers } }).select('phoneNumber');
+  const foundNumbers = new Set(users.map(u => u.phoneNumber));
+  const result = {};
+  phoneNumbers.forEach(num => {
+    result[num] = foundNumbers.has(num);
+  });
+  return res.status(200).json(new ApiResponse(statusCode, result, message));
 });

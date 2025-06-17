@@ -17,6 +17,7 @@ const {
   handleGetAllFriends,
   handleReadChat,
   handleGetAllSentFriendRequests,
+  checkPhoneNumbers,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -454,4 +455,35 @@ router.route('/get-all-friends').get(user, handleGetAllFriends);
  */
 
 router.route('/read-chat/:id').patch(user, handleReadChat);
+
+/**
+ * @swagger
+ * /api/user/check-phone-numbers:
+ *   post:
+ *     summary: Check if phone numbers exist in users
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: string
+ *               example: "919876543211"
+ *     responses:
+ *       200:
+ *         description: Phone number availability map
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties:
+ *                 type: boolean
+ */
+
+router.post('/check-contacts', user, checkPhoneNumbers);
+
 module.exports = router;
