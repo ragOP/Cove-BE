@@ -16,6 +16,7 @@ const {
   checkOneToOneChatExists,
   getPendingFriendRequests,
   getSentFriendRequests,
+  getSuggestedUsersRepo,
 } = require('../../repositories/users');
 const User = require('../../models/userModel');
 const { encrypt } = require('../../utils/encryption');
@@ -512,6 +513,16 @@ exports.getSentFriendRequests = async userId => {
   return {
     message: 'Sent friend requests retrieved successfully',
     data: requests,
+    statusCode: 200,
+  };
+};
+
+exports.getSuggestedUsers = async userId => {
+  // For now, just return all users except the current user
+  const users = await getSuggestedUsersRepo(userId);
+  return {
+    message: 'Suggested users fetched successfully',
+    data: users,
     statusCode: 200,
   };
 };

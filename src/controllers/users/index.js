@@ -16,6 +16,7 @@ const {
   getAllFriends,
   readChat,
   getSentFriendRequests,
+  getSuggestedUsers,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -187,4 +188,11 @@ exports.checkPhoneNumbers = asyncHandler(async (req, res) => {
     result[num] = foundNumbers.has(num);
   });
   return res.status(200).json(new ApiResponse(statusCode, result, message));
+});
+
+exports.handleGetSuggestedUsers = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const result = await getSuggestedUsers(userId);
+  const { message, data, statusCode = 200 } = result;
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
 });

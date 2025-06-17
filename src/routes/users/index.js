@@ -18,6 +18,7 @@ const {
   handleReadChat,
   handleGetAllSentFriendRequests,
   checkPhoneNumbers,
+  handleGetSuggestedUsers,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -485,5 +486,36 @@ router.route('/read-chat/:id').patch(user, handleReadChat);
  */
 
 router.post('/check-contacts', user, checkPhoneNumbers);
+
+/**
+ * @swagger
+ * /api/user/suggested-users:
+ *   get:
+ *     summary: Get suggested users (currently returns all users as contacts)
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of suggested users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   username:
+ *                     type: string
+ *                   phoneNumber:
+ *                     type: string
+ *                   profilePicture:
+ *                     type: string
+ */
+router.get('/suggested-users', user, handleGetSuggestedUsers);
 
 module.exports = router;

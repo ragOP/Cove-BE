@@ -193,3 +193,9 @@ exports.getSentFriendRequests = async userId => {
   }).populate('receiver', 'name username profilePicture');
   return requests;
 };
+
+exports.getSuggestedUsersRepo = async userId => {
+  // For now, return all users except the current user
+  return await User.find({ _id: { $ne: userId } })
+    .select('name username phoneNumber profilePicture');
+};
