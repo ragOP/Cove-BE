@@ -175,7 +175,7 @@ exports.handleGetAllSentFriendRequests = asyncHandler(async (req, res) => {
 });
 
 exports.checkPhoneNumbers = asyncHandler(async (req, res) => {
-  const phoneNumbers = req.body;
+  const phoneNumbers = req.body.contacts;
   if (!Array.isArray(phoneNumbers)) {
     return res
       .status(400)
