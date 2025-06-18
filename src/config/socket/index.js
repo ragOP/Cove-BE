@@ -80,14 +80,11 @@ const initializeSocket = server => {
     const user = await User.findById(socket.user._id).select('friends');
     if (user) {
       user.friends.forEach(friendId => {
-        const friendSocket = io.sockets.adapter.rooms.get(friendId.toString());
-        if (friendSocket) {
-          io.to(friendId.toString()).emit('get_user_info', {
-            userId: socket.user._id,
-            lastSeen: new Date(),
-            isOnline: true,
-          });
-        }
+        io.to(friendId.toString()).emit('get_user_info', {
+          userId: socket.user._id,
+          lastSeen: new Date(),
+          isOnline: true,
+        });
       });
     }
 
@@ -98,15 +95,15 @@ const initializeSocket = server => {
         socket.join(chatId.toString());
       }
       // Notify only the receiver about user's online status
-      if (receiverId) {
-        const receiverSocket = io.sockets.adapter.rooms.get(receiverId.toString());
-        if (receiverSocket) {
-          io.to(receiverId.toString()).emit('get_user_info', {
+      const user = await User.findById(socket.user._id).select('friends');
+      if (user) {
+        user.friends.forEach(friendId => {
+          io.to(friendId.toString()).emit('get_user_info', {
             userId: socket.user._id,
             lastSeen: new Date(),
             isOnline: true,
           });
-        }
+        });
       }
     });
 
@@ -217,14 +214,11 @@ const initializeSocket = server => {
         const user = await User.findById(socket.user._id).select('friends');
         if (user) {
           user.friends.forEach(friendId => {
-            const friendSocket = io.sockets.adapter.rooms.get(friendId.toString());
-            if (friendSocket) {
-              io.to(friendId.toString()).emit('get_user_info', {
-                userId: socket.user._id,
-                lastSeen: new Date(),
-                isOnline: false,
-              });
-            }
+            io.to(friendId.toString()).emit('get_user_info', {
+              userId: socket.user._id,
+              lastSeen: new Date(),
+              isOnline: false,
+            });
           });
         }
       } catch (error) {
