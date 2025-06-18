@@ -32,5 +32,6 @@ exports.validateUserProfileUpdate = [
     .isIn(['ios', 'android', 'web'])
     .withMessage('Device type must be ios, android, or web'),
 
+  body('FCMToken').optional().isString(),
   body('deviceInfo.pushToken').optional().isString(),
 ];
