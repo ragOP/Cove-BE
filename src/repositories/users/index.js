@@ -20,8 +20,6 @@ exports.updateUserProfile = async (data, id) => {
     const salt = await bcrypt.genSalt(10);
     updateFields.password = await bcrypt.hash(data.password, salt);
   }
-  if (data.FCMToken) updateFields.FCMToken = data.FCMToken;
-
   const user = await User.findByIdAndUpdate(id, updateFields, {
     new: true,
     runValidators: true,

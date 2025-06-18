@@ -3,9 +3,12 @@ const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
 
 exports.handleUserRegister = asyncHandler(async (req, res) => {
-  const { phoneNumber, otp } = req.body;
+  const { phoneNumber, otp, FCMToken } = req.body;
 
-  const result = await registerUser(phoneNumber, otp);
+  if (FCMToken === undefined || FCMToken === '' || FCMToken === null) {
+    return res.status(400).json(new ApiResponse(400, null, 'FCM token is required'));
+  }
+  const result = await registerUser(phoneNumber, otp, FCMToken);
 
   const { message, data, statusCode = 200 } = result;
 

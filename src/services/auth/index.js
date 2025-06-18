@@ -2,7 +2,7 @@ const { checkUserExists, createUser } = require('../../repositories/auth');
 const { OTP } = require('../../constants/otp/index');
 const jwt = require('jsonwebtoken');
 
-exports.registerUser = async (phoneNumber, otp) => {
+exports.registerUser = async (phoneNumber, otp, FCMToken) => {
   const isOtpValid = otp == OTP;
   if (!isOtpValid) {
     return {
@@ -15,7 +15,7 @@ exports.registerUser = async (phoneNumber, otp) => {
   let user = await checkUserExists(phoneNumber);
 
   if (!user) {
-    user = await createUser(phoneNumber);
+    user = await createUser(phoneNumber, FCMToken);
     if (!user) {
       return {
         statusCode: 500,
