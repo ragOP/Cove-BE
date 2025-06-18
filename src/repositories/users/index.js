@@ -195,7 +195,6 @@ exports.getSentFriendRequests = async userId => {
 };
 
 exports.getSuggestedUsersRepo = async userId => {
-  // For now, return all users except the current user
   return await User.find({ _id: { $ne: userId } })
     .select('name username phoneNumber profilePicture');
 };
