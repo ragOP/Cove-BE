@@ -194,7 +194,7 @@ exports.sendMessageService = async ({
       statusCode: 403,
     };
   }
-  
+
   if (!chat) {
     await createNewFriendRequest(senderId, receiverId);
     chat = await createOneToOneChat(senderId, receiverId);
@@ -217,7 +217,7 @@ exports.sendMessageService = async ({
       statusCode: 202,
     };
   }
-  
+
   const message = await createMessageAndAddToChat(chat, {
     senderId,
     receiverId,
@@ -461,7 +461,7 @@ exports.readChat = async (userId, chatId) => {
       statusCode: 404,
     };
   }
-  
+
   const messages = await messageModel.find({ chat: chatId });
   const unreadMessages = messages.filter(
     message => message.receiver.toString() === userId.toString() && message.status === 'sent'
@@ -478,22 +478,59 @@ exports.readChat = async (userId, chatId) => {
   );
 
   if (result) {
-    // Emit socket events for read messages
     const io = getIO();
     const otherParticipant = chat.participants.find(p => p.toString() !== userId.toString());
-    const sender = await User.findById(otherParticipant).select('socketId');
-    
-    if (sender && sender.socketId) {
-      // Emit only to the specific sender's socket for each unread message
-      unreadMessages.forEach(message => {
-        io.to(sender.socketId).emit('message_read_update', {
-          messageId: message._id,
-          chatId: chatId,
-          readBy: userId
-        });
+    const currentUser = await User.findById(userId).select('socketId friends');
+    const sender = await User.findById(otherParticipant).select('socketId friends');
+
+    const getChatList = async forUserId => {
+      const chats = await OneToOneChat.find({ participants: forUserId })
+        .populate('participants', 'name username profilePicture')
+        .populate({
+          path: 'lastMessage',
+          populate: {
+            path: 'sender',
+            select: 'name username profilePicture',
+          },
+        })
+        .sort({ lastMessage: -1 });
+      return Promise.all(
+        chats.map(async chat => {
+          const unreadCount = await messageModel.countDocuments({
+            chat: chat._id,
+            receiver: forUserId,
+            status: 'sent',
+          });
+          const otherParticipant = chat.participants.filter(
+            p => p._id.toString() !== forUserId.toString()
+          );
+          const isFriend = await User.findById(forUserId).then(user =>
+            user.friends.includes(otherParticipant[0]._id)
+          );
+          return {
+            ...chat.toObject(),
+            lastMessage: chat.lastMessage,
+            unreadCount,
+            isFriend,
+            chatWith: otherParticipant,
+          };
+        })
+      );
+    };
+    if (currentUser && currentUser.socketId) {
+      const chatList = await getChatList(userId);
+      io.to(currentUser.socketId).emit('chat_list_update', {
+        success: true,
+        data: chatList,
       });
     }
-
+    if (sender && sender.socketId) {
+      const chatList = await getChatList(otherParticipant);
+      io.to(sender.socketId).emit('chat_list_update', {
+        success: true,
+        data: chatList,
+      });
+    }
     return {
       message: 'Chat read successfully',
       data: { unreadCount, readCount },

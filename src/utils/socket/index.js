@@ -21,19 +21,6 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
   const room = io.sockets.adapter.rooms.get(chatRoomId);
   const isReceiverInChat = isReceiverOnline && room?.has(receiver.socketId.toString());
 
-  if (isReceiverInChat) {
-    message.status = 'read';
-    await message.save();
-
-    if (sender && sender.socketId) {
-      io.to(sender.socketId).emit('message_read_update', {
-        messageId,
-        chatId: chat._id,
-        readBy: receiverId,
-        timestamp: new Date(),
-      });
-    }
-  }
 
   // Only emit to the receiver's socket
   if (receiver && receiver.socketId) {
@@ -49,6 +36,18 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
       ...message.toObject(),
       chat: chat._id,
     });
+  }
+
+  if (isReceiverInChat) {
+    message.status = 'read';
+    await message.save();
+
+    if (sender && sender.socketId) {
+      io.to(sender.socketId).emit('message_read_update', {
+        success: true,
+        data: message,
+      });
+    }
   }
 
   emittedMessages.add(messageId);
