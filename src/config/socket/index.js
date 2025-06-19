@@ -80,6 +80,9 @@ const initializeSocket = server => {
     const user = await User.findById(socket.user._id).select('friends');
     if (user) {
       user.friends.forEach(friendId => {
+        if(friendId.toString() === socket.user._id.toString()) {
+          return;
+        }
         io.to(friendId.toString()).emit('get_user_info', {
           userId: socket.user._id,
           lastSeen: new Date(),
@@ -98,6 +101,9 @@ const initializeSocket = server => {
       const user = await User.findById(socket.user._id).select('friends');
       if (user) {
         user.friends.forEach(friendId => {
+          if(friendId.toString() === socket.user._id.toString()) {
+            return;
+          }
           io.to(friendId.toString()).emit('get_user_info', {
             userId: socket.user._id,
             lastSeen: new Date(),
@@ -214,6 +220,9 @@ const initializeSocket = server => {
         const user = await User.findById(socket.user._id).select('friends');
         if (user) {
           user.friends.forEach(friendId => {
+            if(friendId.toString() === socket.user._id.toString()) {
+              return;
+            }
             io.to(friendId.toString()).emit('get_user_info', {
               userId: socket.user._id,
               lastSeen: new Date(),
