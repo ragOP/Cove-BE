@@ -1,4 +1,4 @@
-const { checkUserExists, createUser } = require('../../repositories/auth');
+const { checkUserExists, createUser, updateFCMToken } = require('../../repositories/auth');
 const { OTP } = require('../../constants/otp/index');
 const jwt = require('jsonwebtoken');
 
@@ -13,6 +13,10 @@ exports.registerUser = async (phoneNumber, otp, FCMToken) => {
   }
 
   let user = await checkUserExists(phoneNumber);
+
+  if(user && (user.FCMToken === null || user.FCMToken === undefined || user.FCMToken === '')) {
+    await updateFCMToken(user._id, FCMToken);
+  }
 
   if (!user) {
     user = await createUser(phoneNumber, FCMToken);

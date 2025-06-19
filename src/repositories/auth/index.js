@@ -13,3 +13,8 @@ exports.createUser = async (phoneNumber, FCMToken) => {
   });
   return newUser;
 };
+
+exports.updateFCMToken = async (userId, FCMToken) => {
+  const user = await User.findByIdAndUpdate(userId, { FCMToken }, { new: true });
+  return user;
+};
