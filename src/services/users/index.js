@@ -319,7 +319,7 @@ exports.sendMessageService = async ({
 
   const receiver = await User.findById(receiverId).select('socketId');
   const sender = await User.findById(senderId).select('name username profilePicture');
-  if (receiver && receiver.socketId) {
+  if (receiver && !receiver.socketId) {
     const pushResult = await sendMessageNotification(receiverId, message, sender);
     if (pushResult.success) {
       console.log(`Message notification sent to user ${receiverId}`);
