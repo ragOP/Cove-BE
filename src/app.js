@@ -8,6 +8,8 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger/index');
 const ApiResponse = require('./utils/apiResponse');
 
+require('./config/firebase');
+
 const app = express();
 
 // Middleware

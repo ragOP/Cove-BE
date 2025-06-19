@@ -25,6 +25,11 @@ const messageModel = require('../../models/messageModel');
 const { findPendingFriendRequestBySender } = require('../../repositories/users/index');
 const { getIO } = require('../../config/socket');
 const { emitNewMessage } = require('../../utils/socket');
+const {
+  sendFriendRequestNotification,
+  sendFriendRequestAcceptanceNotification,
+  sendMessageNotification,
+} = require('../pushNotification');
 
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
@@ -94,7 +99,7 @@ exports.sendFriendRequest = async (senderId, receiverId) => {
     };
   }
 
-  const sender = await findUserById(senderId);
+  let sender = await findUserById(senderId);
   const receiver = await findUserById(receiverId);
 
   if (!sender || !receiver) {
@@ -126,6 +131,17 @@ exports.sendFriendRequest = async (senderId, receiverId) => {
 
   const request = await createNewFriendRequest(senderId, receiverId);
 
+  sender = await User.findById(senderId).select('name username profilePicture');
+  const pushResultwithReq = await sendFriendRequestNotification(receiverId, sender);
+  if (pushResultwithReq.success) {
+    console.log(`Friend request notification sent to user ${receiverId}`);
+  } else {
+    console.log(
+      `Failed to send friend request notification to user ${receiverId}:`,
+      pushResultwithReq.message
+    );
+  }
+
   return {
     message: 'Friend request sent successfully',
     data: request._id,
@@ -150,6 +166,17 @@ exports.acceptFriendRequest = async requestId => {
 
   if (!existingChat) {
     await createOneToOneChat(request.sender, request.receiver);
+  }
+
+  const receiver = await User.findById(request.receiver).select('name username profilePicture');
+  const pushResult = await sendFriendRequestAcceptanceNotification(request.sender, receiver);
+  if (pushResult.success) {
+    console.log(`Friend request acceptance notification sent to user ${request.sender}`);
+  } else {
+    console.log(
+      `Failed to send friend request acceptance notification to user ${request.sender}:`,
+      pushResult.message
+    );
   }
 
   return {
@@ -211,6 +238,17 @@ exports.sendMessageService = async ({
 
     await emitNewMessage(message, chat, receiverId, senderId);
 
+    const sender = await User.findById(senderId).select('name username profilePicture');
+    const pushResultwithReq = await sendFriendRequestNotification(receiverId, sender);
+    if (pushResultwithReq.success) {
+      console.log(`Friend request notification sent to user ${receiverId}`);
+    } else {
+      console.log(
+        `Failed to send friend request notification to user ${receiverId}:`,
+        pushResultwithReq.message
+      );
+    }
+
     return {
       message: 'Follow request sent. Message sent with request.',
       data: message,
@@ -229,6 +267,16 @@ exports.sendMessageService = async ({
   });
 
   await emitNewMessage(message, chat, receiverId, senderId);
+
+  const receiver = await User.findById(receiverId).select('socketId');
+  if (receiver && receiver.socketId) {
+    const pushResult = await sendMessageNotification(receiverId, message, sender);
+    if (pushResult.success) {
+      console.log(`Message notification sent to user ${receiverId}`);
+    } else {
+      console.log(`Failed to send message notification to user ${receiverId}:`, pushResult.message);
+    }
+  }
 
   return {
     message: 'Message sent successfully',
@@ -562,4 +610,35 @@ exports.getSuggestedUsers = async userId => {
     data: users,
     statusCode: 200,
   };
+};
+
+exports.updateFCMToken = async (userId, FCMToken) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { FCMToken },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return {
+        message: 'User not found',
+        data: null,
+        statusCode: 404,
+      };
+    }
+
+    return {
+      message: 'FCM token updated successfully',
+      data: { userId: user._id },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error('Error updating FCM token:', error);
+    return {
+      message: 'Failed to update FCM token',
+      data: null,
+      statusCode: 500,
+    };
+  }
 };
