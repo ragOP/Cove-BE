@@ -18,6 +18,7 @@ const {
   getSentFriendRequests,
   getSuggestedUsers,
   getUserInfo,
+  rejectFriendRequest,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -210,6 +211,14 @@ exports.handleGetSuggestedUsers = asyncHandler(async (req, res) => {
 exports.handleGetUserInfo = asyncHandler(async (req, res) => {
   const userId = req.params.id;
   const result = await getUserInfo(userId);
+  const { message, data, statusCode = 200 } = result;
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleRejectFriendRequest = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { requestId } = req.params;
+  const result = await rejectFriendRequest(userId, requestId);
   const { message, data, statusCode = 200 } = result;
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
 });

@@ -708,3 +708,34 @@ exports.getUserInfo = async userId => {
     statusCode: 200,
   };
 };
+
+exports.rejectFriendRequest = async (userId, requestId) => {
+  const request = await FriendRequest.findById(requestId);
+  if (!request) {
+    return {
+      message: 'Friend request not found',
+      data: null,
+      statusCode: 404,
+    };
+  }
+  if (request.receiver.toString() !== userId.toString()) {
+    return {
+      message: 'You are not authorized to reject this friend request',
+      data: null,
+      statusCode: 403,
+    };
+  }
+  const sender = request.sender;
+  const receiver = request.receiver;
+  const chat = await OneToOneChat.findOne({ participants: { $all: [sender, receiver] } });
+  if (chat) {
+    await OneToOneChat.findByIdAndDelete(chat._id);
+    await messageModel.deleteMany({ chat: chat._id });
+  }
+  await FriendRequest.findByIdAndDelete(requestId);
+  return {
+    message: 'Friend request rejected successfully',
+    data: null,
+    statusCode: 200,
+  };
+};

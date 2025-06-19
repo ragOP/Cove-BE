@@ -20,6 +20,7 @@ const {
   checkPhoneNumbers,
   handleGetSuggestedUsers,
   handleGetUserInfo,
+  handleRejectFriendRequest,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -543,5 +544,26 @@ router.get('/suggested-users', user, handleGetSuggestedUsers);
  *               type: object
  */
 router.get('/user-info/:id', user, handleGetUserInfo);
+
+/**
+ * @swagger
+ * /api/user/reject-friend-request/{id}:
+ *   delete:
+ *     summary: Reject a friend request
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200:
+ *         description: Friend request rejected successfully
+ */
+router.delete('/reject-friend-request/:id', user, handleRejectFriendRequest);
 
 module.exports = router;
