@@ -100,7 +100,7 @@ exports.sendFriendRequest = async (senderId, receiverId) => {
   }
 
   let sender = await findUserById(senderId);
-  const receiver = await findUserById(receiverId);
+  let receiver = await findUserById(receiverId);
 
   if (!sender || !receiver) {
     return {
@@ -130,6 +130,31 @@ exports.sendFriendRequest = async (senderId, receiverId) => {
   }
 
   const request = await createNewFriendRequest(senderId, receiverId);
+
+  const data = await FriendRequest.find({ receiver: receiverId, status: 'pending' }).populate('sender', 'name username profilePicture');
+  const count = data.length;
+
+  const io = getIO();
+  receiver = await User.findById(receiverId).select('socketId');
+  if (receiver && receiver.socketId) {
+    io.to(receiver.socketId).emit('friend_request_received', {
+      success: true,
+      data: {
+        count: count,
+        data: data,
+      },
+    });
+    io.to(receiver.socketId).emit('notification', {
+      success: true,
+      data: {
+        type: 'friend_request_received',
+        title: `${sender.name} has sent you a friend request`,
+        data: {
+          requestId: request._id,
+        },
+      },
+    });
+  }
 
   sender = await User.findById(senderId).select('name username profilePicture');
   const pushResultwithReq = await sendFriendRequestNotification(receiverId, sender);
@@ -168,7 +193,7 @@ exports.acceptFriendRequest = async requestId => {
     await createOneToOneChat(request.sender, request.receiver);
   }
 
-  const receiver = await User.findById(request.receiver).select('name username profilePicture');
+  let receiver = await User.findById(request.receiver).select('name username profilePicture');
   const pushResult = await sendFriendRequestAcceptanceNotification(request.sender, receiver);
   if (pushResult.success) {
     console.log(`Friend request acceptance notification sent to user ${request.sender}`);
@@ -177,6 +202,30 @@ exports.acceptFriendRequest = async requestId => {
       `Failed to send friend request acceptance notification to user ${request.sender}:`,
       pushResult.message
     );
+  }
+
+  const sender = await User.findById(request.sender).select('socketId');
+  const data = await FriendRequest.find({ sender: request.sender, status: 'pending' }).populate('receiver', 'name username profilePicture');
+  const count = data.length;
+  if (sender && sender.socketId) {
+    const io = getIO();
+    io.to(sender && sender.socketId).emit('notification', {
+      success: true,
+      data: {
+        type: 'friend_request_accepted',
+        title: `${request.sender.name} has accepted your friend request`,
+        data: {
+          requestId: request._id,
+        },
+      },
+    });
+    io.to(sender && sender.socketId).emit('friend_request_received', {
+      success: true,
+      data: {
+        count: count,
+        data: data,
+      },
+    });
   }
 
   return {
