@@ -217,8 +217,8 @@ exports.handleGetUserInfo = asyncHandler(async (req, res) => {
 
 exports.handleRejectFriendRequest = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { requestId } = req.params;
-  const result = await rejectFriendRequest(userId, requestId);
+  const { id } = req.params;
+  const result = await rejectFriendRequest(userId, id);
   const { message, data, statusCode = 200 } = result;
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
 });
