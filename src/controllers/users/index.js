@@ -19,6 +19,7 @@ const {
   getSuggestedUsers,
   getUserInfo,
   rejectFriendRequest,
+  searchFriends,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -219,6 +220,14 @@ exports.handleRejectFriendRequest = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { id } = req.params;
   const result = await rejectFriendRequest(userId, id);
+  const { message, data, statusCode = 200 } = result;
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleSearchFriends = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { search } = req.query;
+  const result = await searchFriends(userId, search);
   const { message, data, statusCode = 200 } = result;
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
 });

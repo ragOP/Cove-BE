@@ -739,3 +739,20 @@ exports.rejectFriendRequest = async (userId, requestId) => {
     statusCode: 200,
   };
 };
+
+exports.searchFriends = async (userId, search) => {
+  const friends = await User.findById(userId).select('friends');
+  const friendQuery = await User.find({
+    $or: [
+      {username: { $regex: search, $options: 'i' }},
+      {name: { $regex: search, $options: 'i' }},
+      {phoneNumber: { $regex: search, $options: 'i' }},
+    ],
+    _id: { $in: friends.friends },
+  });
+  return {
+    message: 'Friends retrieved successfully',
+    data: friendQuery,
+    statusCode: 200,
+  };
+}

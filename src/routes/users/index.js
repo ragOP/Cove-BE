@@ -21,6 +21,7 @@ const {
   handleGetSuggestedUsers,
   handleGetUserInfo,
   handleRejectFriendRequest,
+  handleSearchFriends,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -565,5 +566,26 @@ router.get('/user-info/:id', user, handleGetUserInfo);
  *         description: Friend request rejected successfully
  */
 router.delete('/reject-friend-request/:id', user, handleRejectFriendRequest);
+
+/**
+ * @swagger
+ * /api/user/search-friends:
+ *   get:
+ *     summary: Search for friends
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: johndoe
+ *     responses:
+ *       200:
+ *         description: List of friends
+ */
+router.get('/search-friends', user, handleSearchFriends);
 
 module.exports = router;
