@@ -209,7 +209,7 @@ exports.acceptFriendRequest = async requestId => {
   const count = data.length;
   if (sender && sender.socketId) {
     const io = getIO();
-    io.to(sender && sender.socketId).emit('notification', {
+    io.to(sender.socketId).emit('notification', {
       success: true,
       data: {
         type: 'friend_request_accepted',
