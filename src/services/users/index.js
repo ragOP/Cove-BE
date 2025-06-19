@@ -692,3 +692,19 @@ exports.updateFCMToken = async (userId, FCMToken) => {
     };
   }
 };
+
+exports.getUserInfo = async userId => {
+  const user = await User.findById(userId).select('-password');
+  if (!user) {
+    return {
+      message: 'User not found',
+      data: null,
+      statusCode: 404,
+    };
+  }
+  return {
+    message: 'User info retrieved successfully',
+    data: user,
+    statusCode: 200,
+  };
+};

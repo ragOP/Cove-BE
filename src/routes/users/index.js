@@ -19,6 +19,7 @@ const {
   handleGetAllSentFriendRequests,
   checkPhoneNumbers,
   handleGetSuggestedUsers,
+  handleGetUserInfo,
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -517,5 +518,30 @@ router.post('/check-contacts', user, checkPhoneNumbers);
  *                     type: string
  */
 router.get('/suggested-users', user, handleGetSuggestedUsers);
+
+/**
+ * @swagger
+ * /api/user/user-info/{id}:
+ *   get:
+ *     summary: Get user info
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters: 
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200:
+ *         description: User info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ */
+router.get('/user-info/:id', user, handleGetUserInfo);
 
 module.exports = router;

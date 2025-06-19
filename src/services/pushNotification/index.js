@@ -4,7 +4,6 @@ const User = require('../../models/userModel');
 exports.sendPushNotification = async (userId, notificationData, data = {}) => {
   try {
     const user = await User.findById(userId).select('FCMToken name username');
-    console.log("user---->", user);
     if (!user || !user.FCMToken) {
       return {
         success: false,
@@ -18,8 +17,8 @@ exports.sendPushNotification = async (userId, notificationData, data = {}) => {
     const message = {
       token: user.FCMToken,
       notification: {
-        title: notificationData.title || 'New Message',
-        body: notificationData.body || 'You have a new message',
+        title: notificationData.title || 'New Notification',
+        body: notificationData.body || 'You have a new notification',
         ...notificationData,
       },
       data: {
@@ -45,10 +44,7 @@ exports.sendPushNotification = async (userId, notificationData, data = {}) => {
       },
     };
 
-    console.log("message---->", message);
-
     const response = await messaging.send(message);
-    console.log("response---->", response);
     
     console.log(`Push notification sent successfully to user ${userId}:`, response);
     
@@ -78,9 +74,6 @@ exports.sendPushNotification = async (userId, notificationData, data = {}) => {
 };
 
 exports.sendMessageNotification = async (receiverId, message, sender) => {
-  console.log("receiverId---->", receiverId);
-  console.log("message---->", message);
-  console.log("sender---->", sender);
   const messageType = message.type || 'text';
   let notificationTitle = sender.name || sender.username || 'Someone';
   let notificationBody = '';
@@ -116,8 +109,6 @@ exports.sendMessageNotification = async (receiverId, message, sender) => {
     body: notificationBody,
   };
 
-  console.log("notificationData---->", notificationData);
-
   const data = {
     type: 'new_message',
     messageId: message._id.toString(),
@@ -128,7 +119,6 @@ exports.sendMessageNotification = async (receiverId, message, sender) => {
     content: message.content || '',
   };
 
-  console.log("data---->", data);
 
   return await this.sendPushNotification(receiverId, notificationData, data);
 };
