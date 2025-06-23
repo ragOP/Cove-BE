@@ -18,13 +18,13 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
 
   const isReceiverOnline = receiver && receiver.socketId;
   const chatRoomId = chat._id.toString();
-  const room = io.sockets.adapter.rooms.get(chatRoomId);
-  const isReceiverInChat = isReceiverOnline && room?.has(receiver.socketId.toString());
+  const room = io.sockets.adapter.rooms.get(`room_${chatRoomId}`);
+  const isReceiverInChat = isReceiverOnline && room?.has(`room_${receiver._id.toString()}`);
 
 
   // Only emit to the receiver's socket
   if (receiver && receiver.socketId) {
-    io.to(receiver.socketId).emit('new_message', {
+    io.to(`room_${receiver._id.toString()}`).emit('new_message', {
       ...message.toObject(),
       chat: chat._id,
     });
@@ -32,7 +32,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
 
   // Only emit to the sender's socket
   if (sender && sender.socketId) {
-    io.to(sender.socketId).emit('new_message', {
+    io.to(`room_${sender._id.toString()}`).emit('new_message', {
       ...message.toObject(),
       chat: chat._id,
     });
@@ -43,7 +43,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
     await message.save();
 
     if (sender && sender.socketId) {
-      io.to(sender.socketId).emit('message_read_update', {
+      io.to(`room_${sender._id.toString()}`).emit('message_read_update', {
         success: true,
         data: message,
       });
@@ -90,7 +90,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
       })
     );
 
-    io.to(receiver.socketId).emit('chat_list_update', {
+    io.to(`room_${receiver._id.toString()}`).emit('chat_list_update', {
       success: true,
       data: receiverChatResults,
     });
@@ -134,7 +134,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
       })
     );
 
-    io.to(sender.socketId).emit('chat_list_update', {
+    io.to(`room_${sender._id.toString()}`).emit('chat_list_update', {
       success: true,
       data: senderChatResults,
     });

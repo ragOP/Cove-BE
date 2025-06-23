@@ -137,14 +137,14 @@ exports.sendFriendRequest = async (senderId, receiverId) => {
   const io = getIO();
   receiver = await User.findById(receiverId).select('socketId');
   if (receiver && receiver.socketId) {
-    io.to(receiver.socketId).emit('friend_request_received', {
+    io.to(`room_${receiver._id.toString()}`).emit('friend_request_received', {
       success: true,
       data: {
         count: count,
         data: data,
       },
     });
-    io.to(receiver.socketId).emit('notification', {
+    io.to(`room_${receiver._id.toString()}`).emit('notification', {
       success: true,
       data: {
         type: 'friend_request_received',
@@ -209,7 +209,7 @@ exports.acceptFriendRequest = async requestId => {
   const count = data.length;
   if (sender && sender.socketId) {
     const io = getIO();
-    io.to(sender.socketId).emit('notification', {
+    io.to(`room_${sender._id.toString()}`).emit('notification', {
       success: true,
       data: {
         type: 'friend_request_accepted',
@@ -219,7 +219,7 @@ exports.acceptFriendRequest = async requestId => {
         },
       },
     });
-    io.to(sender && sender.socketId).emit('friend_request_received', {
+    io.to(`room_${sender._id.toString()}`).emit('friend_request_received', {
       success: true,
       data: {
         count: count,
@@ -617,14 +617,14 @@ exports.readChat = async (userId, chatId) => {
     };
     if (currentUser && currentUser.socketId) {
       const chatList = await getChatList(userId);
-      io.to(currentUser.socketId).emit('chat_list_update', {
+      io.to(`room_${currentUser._id.toString()}`).emit('chat_list_update', {
         success: true,
         data: chatList,
       });
     }
     if (sender && sender.socketId) {
       const chatList = await getChatList(otherParticipant);
-      io.to(sender.socketId).emit('chat_list_update', {
+      io.to(`room_${sender._id.toString()}`).emit('chat_list_update', {
         success: true,
         data: chatList,
       });
