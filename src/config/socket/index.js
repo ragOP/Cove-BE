@@ -61,13 +61,13 @@ const initializeSocket = server => {
     }
   });
 
-  io.on('connect', socket => {
-    if (socket.user) return;
-  });
+  // io.on('connect', socket => {
+  //   if (socket.user) return;
+  // });
 
   io.on('connection', async socket => {
     // Join user's personal room
-    socket.join(`room_${socket.user._id.toString()}`);
+    socket.join(socket.user._id);
 
     // Update user's online status and socket ID
     await User.findByIdAndUpdate(socket.user._id, {
@@ -83,7 +83,7 @@ const initializeSocket = server => {
         if (friendId.toString() === socket.user._id.toString()) {
           return;
         }
-        io.to(`room_${friendId.toString()}`).emit('get_user_info', {
+        io.to(friendId).emit(`get_user_info_${friendId}`, {
           userId: socket.user._id,
           lastSeen: new Date(),
           isOnline: true,
@@ -95,7 +95,7 @@ const initializeSocket = server => {
     socket.on('join_chat', async data => {
       const { chatId, receiverId } = data;
       if (chatId) {
-        socket.join(`room_${chatId.toString()}`);
+        socket.join(chatId);
       }
       // Notify only the receiver about user's online status
       const user = await User.findById(socket.user._id).select('friends');
@@ -104,7 +104,7 @@ const initializeSocket = server => {
           if (friendId.toString() === socket.user._id.toString()) {
             return;
           }
-          io.to(`room_${friendId.toString()}`).emit('get_user_info', {
+          io.to(friendId).emit(`get_user_info_${friendId}`, {
             userId: socket.user._id,
             lastSeen: new Date(),
             isOnline: true,
@@ -115,15 +115,15 @@ const initializeSocket = server => {
 
     // Handle leaving a chat room
     socket.on('leave_chat', async chatId => {
-      socket.leave(chatId.toString());
+      socket.leave(chatId);
     });
 
     // Handle typing status
     socket.on('typing_status', ({ receiverId, isTyping }) => {
       if (receiverId) {
-        const receiverSocket = io.sockets.adapter.rooms.get(`room_${receiverId.toString()}`);
+        const receiverSocket = io.sockets.adapter.rooms.get(receiverId);
         if (receiverSocket) {
-          io.to(`room_${receiverId.toString()}`).emit('typing_status_update', {
+          io.to(receiverId).emit(`typing_status_update_${receiverId}`, {
             senderId: socket.user._id,
             isTyping,
           });
@@ -145,7 +145,7 @@ const initializeSocket = server => {
             if (friendId.toString() === socket.user._id.toString()) {
               return;
             }
-            io.to(`room_${friendId.toString()}`).emit('get_user_info', {
+            io.to(friendId).emit(`get_user_info_${friendId}`, {
               userId: socket.user._id,
               lastSeen: new Date(),
               isOnline: false,
