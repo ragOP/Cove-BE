@@ -24,7 +24,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
 
   // Only emit to the receiver's socket
   if (receiver && receiver.socketId) {
-    io.to(receiver.socketId).emit('new_message', {
+    io.to(receiver.socketId).emit(`new_message_${receiver.socketId}`, {
       ...message.toObject(),
       chat: chat._id,
     });
@@ -32,7 +32,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
 
   // Only emit to the sender's socket
   if (sender && sender.socketId) {
-    io.to(sender.socketId).emit('new_message', {
+    io.to(sender.socketId).emit(`new_message_${sender.socketId}`, {
       ...message.toObject(),
       chat: chat._id,
     });
@@ -43,7 +43,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
     await message.save();
 
     if (sender && sender.socketId) {
-      io.to(sender.socketId).emit('message_read_update', {
+      io.to(sender.socketId).emit(`message_read_update_${sender.socketId}`, {
         success: true,
         data: message,
       });
@@ -90,7 +90,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
       })
     );
 
-    io.to(receiver.socketId).emit('chat_list_update', {
+    io.to(receiver.socketId).emit(`chat_list_update_${receiver.socketId}`, {
       success: true,
       data: receiverChatResults,
     });
@@ -134,7 +134,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
       })
     );
 
-    io.to(sender.socketId).emit('chat_list_update', {
+    io.to(sender.socketId).emit(`chat_list_update_${sender.socketId}`, {
       success: true,
       data: senderChatResults,
     });

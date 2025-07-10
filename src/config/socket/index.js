@@ -80,10 +80,10 @@ const initializeSocket = server => {
     const user = await User.findById(socket.user._id).select('friends');
     if (user) {
       user.friends.forEach(friendId => {
-        if(friendId.toString() === socket.user._id.toString()) {
+        if (friendId.toString() === socket.user._id.toString()) {
           return;
         }
-        io.to(friendId.toString()).emit('get_user_info', {
+        io.to(friendId.toString()).emit(`get_user_info_${friendId}`, {
           userId: socket.user._id,
           lastSeen: new Date(),
           isOnline: true,
@@ -101,10 +101,10 @@ const initializeSocket = server => {
       const user = await User.findById(socket.user._id).select('friends');
       if (user) {
         user.friends.forEach(friendId => {
-          if(friendId.toString() === socket.user._id.toString()) {
+          if (friendId.toString() === socket.user._id.toString()) {
             return;
           }
-          io.to(friendId.toString()).emit('get_user_info', {
+          io.to(friendId.toString()).emit(`get_user_info_${friendId}`, {
             userId: socket.user._id,
             lastSeen: new Date(),
             isOnline: true,
@@ -123,88 +123,13 @@ const initializeSocket = server => {
       // Only emit typing status to the receiver
       if (receiverId) {
         const receiverSocket = io.sockets.adapter.rooms.get(receiverId.toString());
+        console.log(receiverSocket, 'receiverSocket');
         if (receiverSocket) {
-          io.to(receiverId.toString()).emit('typing_status_update', {
+          io.to(receiverId.toString()).emit(`typing_status_update_${receiverId}`, {
             senderId: socket.user._id,
             isTyping,
           });
         }
-      }
-    });
-
-    // Handle message read status
-    socket.on('message_read', async data => {
-      try {
-        const { senderId, messageId } = data;
-        const sender = await User.findById(senderId).select('socketId');
-
-        if (sender && sender.socketId) {
-          io.to(sender.socketId).emit('message_read_update', {
-            messageId,
-            readBy: socket.user._id,
-          });
-        }
-      } catch (error) {
-        console.error('Error updating read receipt:', error);
-      }
-    });
-
-    // Handle chat list updates
-    socket.on('recieve_message_onChatList', async data => {
-      const { userId } = data;
-      try {
-        const chats = await OneToOneChat.find({ participants: userId })
-          .populate('participants', 'name username profilePicture')
-          .populate({
-            path: 'lastMessage',
-            populate: {
-              path: 'sender',
-              select: 'name username profilePicture',
-            },
-          })
-          .sort({
-            lastMessage: -1,
-          });
-
-        const chatResults = await Promise.all(
-          chats.map(async chat => {
-            const unreadCount = await messageModel.countDocuments({
-              chat: chat._id,
-              receiver: userId,
-              status: 'sent',
-            });
-            const messages = await messageModel.find({ chat: chat._id }).sort({ createdAt: -1 });
-            const otherParticipant = chat.participants.filter(
-              p => p._id.toString() !== userId.toString()
-            );
-            const isFriend = await User.findById(userId).then(user =>
-              user.friends.includes(otherParticipant[0]._id)
-            );
-            return {
-              ...chat.toObject(),
-              lastMessage: chat.lastMessage,
-              unreadCount,
-              isFriend,
-              messages: messages.map(message => ({
-                ...message.toObject(),
-                content: message.content,
-                mediaUrl: message.mediaUrl,
-              })),
-              chatWith: otherParticipant,
-            };
-          })
-        );
-        // Only emit to the requesting user
-        socket.emit('chat_list_update', {
-          success: true,
-          data: chatResults,
-        });
-      } catch (error) {
-        console.error('Error receiving message on chat list:', error);
-        socket.emit('chat_list_update', {
-          success: false,
-          error: 'Error fetching chat list',
-        });
       }
     });
 
@@ -220,10 +145,10 @@ const initializeSocket = server => {
         const user = await User.findById(socket.user._id).select('friends');
         if (user) {
           user.friends.forEach(friendId => {
-            if(friendId.toString() === socket.user._id.toString()) {
+            if (friendId.toString() === socket.user._id.toString()) {
               return;
             }
-            io.to(friendId.toString()).emit('get_user_info', {
+            io.to(friendId.toString()).emit(`get_user_info_${friendId}`, {
               userId: socket.user._id,
               lastSeen: new Date(),
               isOnline: false,
