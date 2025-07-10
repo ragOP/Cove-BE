@@ -76,19 +76,39 @@ const initializeSocket = server => {
       lastSeen: new Date(),
     });
 
-    // Notify friends about user's online status
+    // Notify friends about current user's online status
     const user = await User.findById(socket.user._id).select('friends');
     if (user) {
+<<<<<<< HEAD
       user.friends.forEach(friendId => {
         if (friendId.toString() === socket.user._id.toString()) {
           return;
         }
         io.to(friendId).emit(`get_user_info_${friendId}`, {
+=======
+      for (const friendId of user.friends) {
+        const fid = friendId.toString();
+        if (fid === socket.user._id.toString()) continue;
+
+        // Notify friends that current user is online
+        io.to(fid).emit(`get_user_info_${fid}`, {
+>>>>>>> cf340ffd8c708f5b2396f84b8bb4535df21ecb2f
           userId: socket.user._id,
           lastSeen: new Date(),
           isOnline: true,
         });
-      });
+
+        // NEW: Check if the friend is already online
+        const friend = await User.findById(fid).select('isOnline lastSeen');
+        if (friend?.isOnline) {
+          // Notify current user that friend is already online
+          io.to(socket.user._id.toString()).emit(`get_user_info_${socket.user._id}`, {
+            userId: fid,
+            lastSeen: friend.lastSeen,
+            isOnline: true,
+          });
+        }
+      }
     }
 
     // Handle joining a chat room
@@ -97,6 +117,7 @@ const initializeSocket = server => {
       if (chatId) {
         socket.join(chatId);
       }
+<<<<<<< HEAD
       // Notify only the receiver about user's online status
       const user = await User.findById(socket.user._id).select('friends');
       if (user) {
@@ -111,6 +132,8 @@ const initializeSocket = server => {
           });
         });
       }
+=======
+>>>>>>> cf340ffd8c708f5b2396f84b8bb4535df21ecb2f
     });
 
     // Handle leaving a chat room
@@ -121,15 +144,26 @@ const initializeSocket = server => {
     // Handle typing status
     socket.on('typing_status', ({ receiverId, isTyping }) => {
       if (receiverId) {
+<<<<<<< HEAD
         const receiverSocket = io.sockets.adapter.rooms.get(receiverId);
         if (receiverSocket) {
           io.to(receiverId).emit(`typing_status_update_${receiverId}`, {
+=======
+        const receiverSocket = io.sockets.adapter.rooms.get(receiverId.toString());
+        console.log(receiverSocket, 'receiverSocket');
+        if (receiverSocket) {
+          io.to(receiverId.toString()).emit(`typing_status_update_${receiverId}`, {
+>>>>>>> cf340ffd8c708f5b2396f84b8bb4535df21ecb2f
             senderId: socket.user._id,
             isTyping,
           });
         }
       }
     });
+<<<<<<< HEAD
+=======
+
+>>>>>>> cf340ffd8c708f5b2396f84b8bb4535df21ecb2f
     // Handle disconnection
     socket.on('disconnect', async () => {
       try {
@@ -145,7 +179,11 @@ const initializeSocket = server => {
             if (friendId.toString() === socket.user._id.toString()) {
               return;
             }
+<<<<<<< HEAD
             io.to(friendId).emit(`get_user_info_${friendId}`, {
+=======
+            io.to(friendId.toString()).emit(`get_user_info_${friendId}`, {
+>>>>>>> cf340ffd8c708f5b2396f84b8bb4535df21ecb2f
               userId: socket.user._id,
               lastSeen: new Date(),
               isOnline: false,
