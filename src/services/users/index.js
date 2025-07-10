@@ -617,14 +617,14 @@ exports.readChat = async (userId, chatId) => {
     };
     if (currentUser && currentUser.socketId) {
       const chatList = await getChatList(userId);
-      io.to(currentUser.socketId).emit('chat_list_update', {
+      io.to(currentUser.socketId).emit(`chat_list_update_${currentUser._id}`, {
         success: true,
         data: chatList,
       });
     }
     if (sender && sender.socketId) {
       const chatList = await getChatList(otherParticipant);
-      io.to(sender.socketId).emit('chat_list_update', {
+      io.to(sender.socketId).emit(`chat_list_update_${sender._id}`, {
         success: true,
         data: chatList,
       });
