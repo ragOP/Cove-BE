@@ -76,19 +76,31 @@ const initializeSocket = server => {
       lastSeen: new Date(),
     });
 
-    // Notify friends about user's online status
+    // Notify friends about current user's online status
     const user = await User.findById(socket.user._id).select('friends');
     if (user) {
-      user.friends.forEach(friendId => {
-        if (friendId.toString() === socket.user._id.toString()) {
-          return;
-        }
-        io.to(friendId.toString()).emit(`get_user_info_${friendId}`, {
+      for (const friendId of user.friends) {
+        const fid = friendId.toString();
+        if (fid === socket.user._id.toString()) continue;
+
+        // Notify friends that current user is online
+        io.to(fid).emit(`get_user_info_${fid}`, {
           userId: socket.user._id,
           lastSeen: new Date(),
           isOnline: true,
         });
-      });
+
+        // NEW: Check if the friend is already online
+        const friend = await User.findById(fid).select('isOnline lastSeen');
+        if (friend?.isOnline) {
+          // Notify current user that friend is already online
+          io.to(socket.user._id.toString()).emit(`get_user_info_${socket.user._id}`, {
+            userId: fid,
+            lastSeen: friend.lastSeen,
+            isOnline: true,
+          });
+        }
+      }
     }
 
     // Handle joining a chat room
@@ -96,20 +108,6 @@ const initializeSocket = server => {
       const { chatId, receiverId } = data;
       if (chatId) {
         socket.join(chatId.toString());
-      }
-      // Notify only the receiver about user's online status
-      const user = await User.findById(socket.user._id).select('friends');
-      if (user) {
-        user.friends.forEach(friendId => {
-          if (friendId.toString() === socket.user._id.toString()) {
-            return;
-          }
-          io.to(friendId.toString()).emit(`get_user_info_${friendId}`, {
-            userId: socket.user._id,
-            lastSeen: new Date(),
-            isOnline: true,
-          });
-        });
       }
     });
 
