@@ -24,7 +24,8 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
 
   // Only emit to the receiver's socket
   if (receiver && receiver.socketId) {
-    io.to(receiver.socketId).emit(`new_message_${receiver.socketId}`, {
+    console.log(receiver.socketId, "receiver.socketId");
+    io.to(receiver.socketId).emit(`new_message_${receiver._id}`, {
       ...message.toObject(),
       chat: chat._id,
     });
@@ -32,7 +33,8 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
 
   // Only emit to the sender's socket
   if (sender && sender.socketId) {
-    io.to(sender.socketId).emit(`new_message_${sender.socketId}`, {
+    console.log(sender.socketId, "sender.socketId");
+    io.to(sender.socketId).emit(`new_message_${sender._id}`, {
       ...message.toObject(),
       chat: chat._id,
     });
