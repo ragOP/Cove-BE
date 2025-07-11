@@ -1,146 +1,89 @@
-const { getIO } = require('../../config/socket');
 const User = require('../../models/userModel');
-const OneToOneChat = require('../../models/chatModel');
+const OneToOneChat = require('../../models/chatModel/index');
 const messageModel = require('../../models/messageModel');
+const { getIO } = require('../../config/socket');
 
-const emittedMessages = new Set();
+const getUserChatList = async (userId, otherId) => {
+  const chats = await OneToOneChat.find({ participants: { $all: [userId, otherId] } })
+    .populate('participants', 'name username profilePicture')
+    .populate({
+      path: 'lastMessage',
+      populate: { path: 'sender', select: 'name username profilePicture' },
+    })
+    .sort({ lastMessage: -1 });
+
+  const user = await User.findById(userId).select('friends');
+
+  return await Promise.all(
+    chats.map(async chat => {
+      const unreadCount = await messageModel.countDocuments({
+        chat: chat._id,
+        receiver: userId,
+        status: 'sent',
+      });
+      const chatWith = chat.participants.filter(p => p._id.toString() !== userId.toString());
+      return {
+        ...chat.toObject(),
+        lastMessage: chat.lastMessage,
+        unreadCount,
+        isFriend: user?.friends.includes(chatWith[0]._id),
+        chatWith,
+      };
+    })
+  );
+};
 
 exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
-  const messageId = message._id.toString();
-  if (emittedMessages.has(messageId)) {
-    console.log(`Message ${messageId} already emitted, skipping duplicate emission`);
-    return;
-  }
-
   const io = getIO();
-  const receiver = await User.findById(receiverId).select('socketId');
-  const sender = await User.findById(senderId).select('socketId');
+  const messageId = message._id.toString();
+  if (emittedMessages.has(messageId)) return;
 
-  const isReceiverOnline = receiver && receiver.socketId;
   const chatRoomId = chat._id.toString();
+
+  const receiverRoom = `user:${receiverId}`;
+  const senderRoom = `user:${senderId}`;
+
+  // Check if receiver is in the chat room
+  const receiverUser = await User.findById(receiverId).select('socketId');
   const room = io.sockets.adapter.rooms.get(chatRoomId);
-  const isReceiverInChat = isReceiverOnline && room?.has(receiver.socketId.toString());
+  const isReceiverInChat = receiverUser?.socketId && room?.has(receiverUser.socketId.toString());
 
+  // Emit to receiver
+  io.to(receiverRoom).emit('new_message', {
+    message: message.toObject(),
+    chatId: chat._id,
+  });
 
-  // Only emit to the receiver's socket
-  if (receiver && receiver.socketId) {
-    io.to(receiver.socketId).emit(`new_message_${receiver._id}_${senderId}`, {
-      ...message.toObject(),
-      chat: chat._id,
-    });
-  }
+  // Emit to sender
+  io.to(senderRoom).emit('new_message', {
+    message: message.toObject(),
+    chatId: chat._id,
+  });
 
-  // Only emit to the sender's socket
-  if (sender && sender.socketId) {
-    io.to(sender.socketId).emit(`new_message_${sender._id}_${receiverId}`, {
-      ...message.toObject(),
-      chat: chat._id,
-    });
-  }
-
+  // If receiver is in the chat, mark as read and notify sender
   if (isReceiverInChat) {
     message.status = 'read';
     await message.save();
 
-    if (sender && sender.socketId) {
-      io.to(sender.socketId).emit(`message_read_update_${sender._id}`, {
-        success: true,
-        data: message,
-      });
-    }
+    io.to(senderRoom).emit('message_read_update', {
+      messageId: message._id,
+    });
   }
 
   emittedMessages.add(messageId);
+  setTimeout(() => emittedMessages.delete(messageId), 60 * 1000);
 
   // Update chat list for receiver
-  if (receiver && receiver.socketId) {
-    const receiverChats = await OneToOneChat.find({ participants: { $all: [receiverId, senderId] } })
-      .populate('participants', 'name username profilePicture')
-      .populate({
-        path: 'lastMessage',
-        populate: {
-          path: 'sender',
-          select: 'name username profilePicture',
-        },
-      })
-      .sort({
-        lastMessage: -1,
-      });
-
-    const receiverChatResults = await Promise.all(
-      receiverChats.map(async chat => {
-        const unreadCount = await messageModel.countDocuments({
-          chat: chat._id,
-          receiver: receiverId,
-          status: 'sent',
-        });
-        const otherParticipant = chat.participants.filter(
-          p => p._id.toString() !== receiverId.toString()
-        );
-        const isFriend = await User.findById(receiverId).then(user =>
-          user.friends.includes(otherParticipant[0]._id)
-        );
-        return {
-          ...chat.toObject(),
-          lastMessage: chat.lastMessage,
-          unreadCount,
-          isFriend,
-          chatWith: otherParticipant,
-        };
-      })
-    );
-
-    io.to(receiver.socketId).emit(`chat_list_update_${receiver._id}`, {
-      success: true,
-      data: receiverChatResults,
-    });
-  }
+  const receiverChats = await getUserChatList(receiverId, senderId);
+  io.to(receiverRoom).emit('chat_list_update', {
+    success: true,
+    data: receiverChats,
+  });
 
   // Update chat list for sender
-  if (sender && sender.socketId) {
-    const senderChats = await OneToOneChat.find({ participants: { $all: [receiverId, senderId] } })
-      .populate('participants', 'name username profilePicture')
-      .populate({
-        path: 'lastMessage',
-        populate: {
-          path: 'sender',
-          select: 'name username profilePicture',
-        },
-      })
-      .sort({
-        lastMessage: -1,
-      });
-
-    const senderChatResults = await Promise.all(
-      senderChats.map(async chat => {
-        const unreadCount = await messageModel.countDocuments({
-          chat: chat._id,
-          receiver: senderId,
-          status: 'sent',
-        });
-        const otherParticipant = chat.participants.filter(
-          p => p._id.toString() !== senderId.toString()
-        );
-        const isFriend = await User.findById(senderId).then(user =>
-          user.friends.includes(otherParticipant[0]._id)
-        );
-        return {
-          ...chat.toObject(),
-          lastMessage: chat.lastMessage,
-          unreadCount,
-          isFriend,
-          chatWith: otherParticipant,
-        };
-      })
-    );
-
-    io.to(sender.socketId).emit(`chat_list_update_${sender._id}`, {
-      success: true,
-      data: senderChatResults,
-    });
-  }
-
-  setTimeout(() => {
-    emittedMessages.delete(messageId);
-  }, 60 * 1000);
+  const senderChats = await getUserChatList(senderId, receiverId);
+  io.to(senderRoom).emit('chat_list_update', {
+    success: true,
+    data: senderChats,
+  });
 };

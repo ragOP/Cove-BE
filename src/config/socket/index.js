@@ -1,8 +1,6 @@
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../../models/userModel');
-const OneToOneChat = require('../../models/chatModel');
-const messageModel = require('../../models/messageModel');
 
 let io;
 
@@ -23,138 +21,101 @@ const initializeSocket = server => {
     allowEIO3: true,
   });
 
-  io.on('error', error => {
-    console.log('=== Socket Server Error ===');
-    console.log('Error:', error);
-  });
-
-  io.on('connection_error', err => {
-    console.log('=== Socket Connection Error Event ===');
-    console.log('Connection error:', err);
-  });
-
   io.use(async (socket, next) => {
+    const token =
+      socket.handshake.auth.token ||
+      socket.handshake.headers.authorization ||
+      socket.handshake.query.token;
+    if (!token) return next(new Error('Authentication error: Token not provided'));
+
     try {
-      const queryToken = socket.handshake.query.token;
-      const token =
-        socket.handshake.auth.token || socket.handshake.headers.authorization || queryToken;
-
-      if (!token) {
-        return next(new Error('Authentication error: Token not provided'));
-      }
-
-      const cleanToken = token.replace('Bearer ', '');
-
-      try {
-        const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id);
-        if (!user) {
-          throw new Error('Authentication error: User not found');
-        }
-        socket.user = user;
-        next();
-      } catch (jwtError) {
-        throw jwtError;
-      }
-    } catch (error) {
-      next(new Error(`Authentication error: ${error.message}`));
+      const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id);
+      if (!user) return next(new Error('Authentication error: User not found'));
+      socket.user = user;
+      next();
+    } catch (err) {
+      next(new Error('Authentication error: ' + err.message));
     }
   });
 
-  io.on('connect', socket => {
-    if (socket.user) return;
-  });
-
   io.on('connection', async socket => {
-    // Join user's personal room
-    socket.join(socket.user._id.toString());
+    const userId = socket.user._id.toString();
+    const userRoom = `user:${userId}`;
+    socket.join(userRoom); // Join your own room
 
-    // Update user's online status and socket ID
-    await User.findByIdAndUpdate(socket.user._id, {
+    // Update DB
+    await User.findByIdAndUpdate(userId, {
       isOnline: true,
       socketId: socket.id,
       lastSeen: new Date(),
     });
 
-    // Notify friends about current user's online status
-    const user = await User.findById(socket.user._id).select('friends');
+    // Notify all friends
+    const user = await User.findById(userId).select('friends');
     if (user) {
       for (const friendId of user.friends) {
         const fid = friendId.toString();
-        if (fid === socket.user._id.toString()) continue;
+        socket.join(`user:${fid}`); // Join each friend’s room to receive updates
 
-        // Notify friends that current user is online
-        io.to(fid).emit(`get_user_info_${fid}_${socket.user._id}`, {
-          userId: socket.user._id,
-          lastSeen: new Date(),
+        // Notify each friend
+        io.to(`user:${fid}`).emit('get_user_info', {
+          friendId: userId,
           isOnline: true,
+          lastSeen: new Date(),
         });
 
-        // NEW: Check if the friend is already online
+        // Check if friend is online (optional, can cache for perf)
         const friend = await User.findById(fid).select('isOnline lastSeen');
         if (friend?.isOnline) {
           // Notify current user that friend is already online
-          io.to(socket.user._id.toString()).emit(`get_user_info_${socket.user._id}_${fid}`, {
-            userId: fid,
-            lastSeen: friend.lastSeen,
+          io.to(userRoom).emit('get_user_info', {
+            friendId: fid,
             isOnline: true,
+            lastSeen: friend.lastSeen,
           });
         }
       }
     }
 
-    // Handle joining a chat room
-    socket.on('join_chat', async data => {
-      const { chatId, receiverId } = data;
-      if (chatId) {
-        socket.join(chatId.toString());
-      }
+    // Join/Leave chat rooms
+    socket.on('join_chat', ({ chatId }) => {
+      if (chatId) socket.join(chatId.toString());
     });
 
-    // Handle leaving a chat room
-    socket.on('leave_chat', async chatId => {
+    socket.on('leave_chat', chatId => {
       socket.leave(chatId.toString());
     });
 
-    // Handle typing status
+    // Typing
     socket.on('typing_status', ({ receiverId, isTyping }) => {
-      // Only emit typing status to the receiver
-      if (receiverId) {
-        const receiverSocket = io.sockets.adapter.rooms.get(receiverId.toString());
-        console.log(receiverSocket, 'receiverSocket');
-        if (receiverSocket) {
-          io.to(receiverId.toString()).emit(`typing_status_update_${receiverId}`, {
-            senderId: socket.user._id,
-            isTyping,
-          });
-        }
-      }
+      io.to(`user:${receiverId}`).emit('typing_status_update', {
+        senderId: userId,
+        isTyping,
+      });
     });
 
-    // Handle disconnection
+    // Disconnect
     socket.on('disconnect', async () => {
       try {
-        await User.findByIdAndUpdate(socket.user._id, {
+        await User.findByIdAndUpdate(userId, {
           isOnline: false,
           socketId: null,
           lastSeen: new Date(),
         });
 
-        const user = await User.findById(socket.user._id).select('friends');
         if (user) {
-          user.friends.forEach(friendId => {
-            if (friendId.toString() === socket.user._id.toString()) {
-              return;
-            }
-            io.to(friendId.toString()).emit(`get_user_info_${socket.user._id}_${friendId}`, {
-              userId: socket.user._id,
-              lastSeen: new Date(),
+          for (const friendId of user.friends) {
+            const fid = friendId.toString();
+            io.to(`user:${fid}`).emit('get_user_info', {
+              friendId: userId,
               isOnline: false,
+              lastSeen: new Date(),
             });
-          });
+          }
         }
       } catch (error) {
-        console.error('Error handling disconnect:', error);
+        console.error('Disconnect error:', error);
       }
     });
   });
@@ -163,9 +124,7 @@ const initializeSocket = server => {
 };
 
 const getIO = () => {
-  if (!io) {
-    throw new Error('Socket.io not initialized');
-  }
+  if (!io) throw new Error('Socket.io not initialized');
   return io;
 };
 
