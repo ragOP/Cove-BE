@@ -84,7 +84,7 @@ const initializeSocket = server => {
         if (fid === socket.user._id.toString()) continue;
 
         // Notify friends that current user is online
-        io.to(fid).emit(`get_user_info_${socket.user._id}_${fid}`, {
+        io.to(fid).emit(`get_user_info_${fid}_${socket.user._id}`, {
           userId: socket.user._id,
           lastSeen: new Date(),
           isOnline: true,
