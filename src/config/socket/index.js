@@ -84,7 +84,7 @@ const initializeSocket = server => {
         if (fid === socket.user._id.toString()) continue;
 
         // Notify friends that current user is online
-        io.to(fid).emit(`get_user_info_${fid}`, {
+        io.to(fid).emit(`get_user_info_${socket.user._id}_${fid}`, {
           userId: socket.user._id,
           lastSeen: new Date(),
           isOnline: true,
@@ -94,7 +94,7 @@ const initializeSocket = server => {
         const friend = await User.findById(fid).select('isOnline lastSeen');
         if (friend?.isOnline) {
           // Notify current user that friend is already online
-          io.to(socket.user._id.toString()).emit(`get_user_info_${socket.user._id}`, {
+          io.to(socket.user._id.toString()).emit(`get_user_info_${socket.user._id}_${fid}`, {
             userId: fid,
             lastSeen: friend.lastSeen,
             isOnline: true,
@@ -146,7 +146,7 @@ const initializeSocket = server => {
             if (friendId.toString() === socket.user._id.toString()) {
               return;
             }
-            io.to(friendId.toString()).emit(`get_user_info_${friendId}`, {
+            io.to(friendId.toString()).emit(`get_user_info_${socket.user._id}_${friendId}`, {
               userId: socket.user._id,
               lastSeen: new Date(),
               isOnline: false,
