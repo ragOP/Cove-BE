@@ -42,6 +42,23 @@ const initializeSocket = server => {
     }
   });
 
+
+  const emitUserStatusToFriends = async (userId) => {
+    const user = await User.findById(userId).select('friends');
+    for (const friendId of user.friends) {
+      const chat = await OneToOneChat.findOne({
+        participants: { $all: [userId, friendId] },
+      });
+      if (chat) {
+        io.to(`chat:${chat._id}`).emit('get_user_info', {
+          friendId: userId,
+          isOnline: true,
+          lastSeen: new Date(),
+        });
+      }
+    }
+  }
+
   io.on('connection', async socket => {
     const userId = socket.user._id.toString();
     const userRoom = `user:${userId}`;
@@ -54,44 +71,24 @@ const initializeSocket = server => {
     });
 
     const user = await User.findById(userId).select('friends');
-
-    if (user) {
-      const uniqueFriendIds = [...new Set(user.friends.map(f => f.toString()))];
-
-      for (const friendId of uniqueFriendIds) {
-        // Emit to friend's room that this user is online
-        io.to(`user:${friendId}`).emit('get_user_info', {
-          friendId: userId,
-          isOnline: true,
-          lastSeen: new Date(),
-        });
-
-        // Emit back to current user if friend is already online
-        const friend = await User.findById(friendId).select('isOnline lastSeen');
-        if (friend?.isOnline) {
-          io.to(userRoom).emit('get_user_info', {
-            friendId,
-            isOnline: true,
-            lastSeen: friend.lastSeen,
-          });
-        }
-      }
-    }
+    await emitUserStatusToFriends(userId);
 
     // Chat room handling
-    socket.on('join_chat', ({ chatId }) => {
-      if (chatId) {
-        socket.join(chatId.toString());
+    socket.on('join_chat', ({ conversationId }) => {
+      if (conversationId) {
+        const chatRoom = `chat:${conversationId}`;
+        socket.join(chatRoom);
       }
     });
 
-    socket.on('leave_chat', chatId => {
-      socket.leave(chatId.toString());
+    socket.on('leave_chat', conversationId => {
+      const chatRoom = `chat:${conversationId}`;
+      socket.leave(chatRoom);
     });
 
     // Typing indicator
-    socket.on('typing_status', ({ receiverId, isTyping }) => {
-      io.to(`user:${receiverId}`).emit('typing_status_update', {
+    socket.on('typing_status', ({ conversationId, isTyping }) => {
+      io.to(`chat:${conversationId}`).emit('typing_status_update', {
         senderId: userId,
         isTyping,
       });
@@ -105,17 +102,7 @@ const initializeSocket = server => {
           lastSeen: new Date(),
         });
 
-        if (user) {
-          const uniqueFriendIds = [...new Set(user.friends.map(f => f.toString()))];
-
-          for (const friendId of uniqueFriendIds) {
-            io.to(`user:${friendId}`).emit('get_user_info', {
-              friendId: userId,
-              isOnline: false,
-              lastSeen: new Date(),
-            });
-          }
-        }
+        await emitUserStatusToFriends(userId);
       } catch (err) {
         console.error('Socket disconnect error:', err);
       }
