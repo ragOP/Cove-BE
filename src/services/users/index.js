@@ -232,6 +232,7 @@ exports.acceptFriendRequest = async requestId => {
     success: true,
     data: senderChats,
   });
+  
   io.to(senderRoom).emit('notification', {
     success: true,
     data: {
