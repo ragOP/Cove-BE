@@ -1,146 +1,122 @@
-const { getIO } = require('../../config/socket');
 const User = require('../../models/userModel');
-const OneToOneChat = require('../../models/chatModel');
-const messageModel = require('../../models/messageModel');
+const OneToOneChat = require('../../models/chatModel/index');
+const Message = require('../../models/messageModel');
+const { getIO } = require('../../config/socket');
 
+// Global in-memory cache to prevent duplicate emits
 const emittedMessages = new Set();
 
+/**
+ * Get all one-to-one chats between userId and otherId,
+ * with unread count, isFriend flag, and latest message.
+ */
+exports.getUserChatList = async (userId, otherId) => {
+  const chats = await OneToOneChat.find({
+    participants: { $all: [userId, otherId] },
+  })
+    .populate('participants', 'name username profilePicture')
+    .populate({
+      path: 'lastMessage',
+      populate: {
+        path: 'sender',
+        select: 'name username profilePicture',
+      },
+    })
+    .sort({ updatedAt: -1 });
+
+  const user = await User.findById(userId).select('friends');
+
+  return Promise.all(
+    chats.map(async chat => {
+      const unreadCount = await Message.countDocuments({
+        chat: chat._id,
+        receiver: userId,
+        status: 'sent',
+      });
+
+      const chatWith = chat.participants.filter(
+        p => p._id.toString() !== userId.toString()
+      );
+
+      return {
+        ...chat.toObject(),
+        unreadCount,
+        chatWith,
+        isFriend: user?.friends.includes(chatWith[0]._id),
+      };
+    })
+  );
+};
+
+/**
+ * Emit a new message to both sender and receiver,
+ * update message status if receiver is in chat,
+ * and update both chat lists.
+ */
 exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
+  const io = getIO();
   const messageId = message._id.toString();
+
+  // Prevent duplicate emission
   if (emittedMessages.has(messageId)) {
-    console.log(`Message ${messageId} already emitted, skipping duplicate emission`);
+    console.log(`[SKIP] Already emitted message ${messageId}`);
     return;
   }
 
-  const io = getIO();
-  const receiver = await User.findById(receiverId).select('socketId');
-  const sender = await User.findById(senderId).select('socketId');
+  emittedMessages.add(messageId);
+  setTimeout(() => emittedMessages.delete(messageId), 60 * 1000); // cleanup after 1 minute
 
-  const isReceiverOnline = receiver && receiver.socketId;
+  console.log(`[Socket] Emitting message ${messageId} from ${senderId} to ${receiverId}`);
+
   const chatRoomId = chat._id.toString();
-  const room = io.sockets.adapter.rooms.get(`room_${chatRoomId}`);
-  const isReceiverInChat = isReceiverOnline && room?.has(`room_${receiver._id.toString()}`);
+  const receiverRoom = `user:${receiverId}`;
+  const senderRoom = `user:${senderId}`;
 
+  // Check if receiver is active in the chat room
+  const receiverUser = await User.findById(receiverId).select('socketId');
+  const chatRoom = io.sockets.adapter.rooms.get(chatRoomId);
+  const isReceiverInChat =
+    receiverUser?.socketId && chatRoom?.has(receiverUser.socketId);
 
-  // Only emit to the receiver's socket
-  if (receiver && receiver.socketId) {
-    io.to(receiver.socketId).emit(`new_message_${receiver._id}`, {
-      ...message.toObject(),
-      chat: chat._id,
+  // Emit message to receiver (if not same as sender)
+  if (receiverId !== senderId) {
+    io.to(receiverRoom).emit('new_message', {
+      message: message.toObject(),
+      chatId: chat._id,
     });
   }
 
-  // Only emit to the sender's socket
-  if (sender && sender.socketId) {
-    io.to(sender.socketId).emit(`new_message_${sender._id}`, {
-      ...message.toObject(),
-      chat: chat._id,
-    });
-  }
+  // Emit message to sender
+  io.to(senderRoom).emit('new_message', {
+    message: message.toObject(),
+    chatId: chat._id,
+  });
 
+  // If receiver is actively in chat, mark message as read
   if (isReceiverInChat) {
     message.status = 'read';
     await message.save();
 
-    if (sender && sender.socketId) {
-      io.to(sender.socketId).emit(`message_read_update_${sender._id}`, {
-        success: true,
-        data: message,
-      });
-    }
-  }
-
-  emittedMessages.add(messageId);
-
-  // Update chat list for receiver
-  if (receiver && receiver.socketId) {
-    const receiverChats = await OneToOneChat.find({ participants: { $all: [receiverId, senderId] } })
-      .populate('participants', 'name username profilePicture')
-      .populate({
-        path: 'lastMessage',
-        populate: {
-          path: 'sender',
-          select: 'name username profilePicture',
-        },
-      })
-      .sort({
-        lastMessage: -1,
-      });
-
-    const receiverChatResults = await Promise.all(
-      receiverChats.map(async chat => {
-        const unreadCount = await messageModel.countDocuments({
-          chat: chat._id,
-          receiver: receiverId,
-          status: 'sent',
-        });
-        const otherParticipant = chat.participants.filter(
-          p => p._id.toString() !== receiverId.toString()
-        );
-        const isFriend = await User.findById(receiverId).then(user =>
-          user.friends.includes(otherParticipant[0]._id)
-        );
-        return {
-          ...chat.toObject(),
-          lastMessage: chat.lastMessage,
-          unreadCount,
-          isFriend,
-          chatWith: otherParticipant,
-        };
-      })
-    );
-
-    io.to(receiver.socketId).emit(`chat_list_update_${receiver._id}`, {
-      success: true,
-      data: receiverChatResults,
+    io.to(senderRoom).emit('message_read_update', {
+      messageId: message._id,
     });
   }
 
-  // Update chat list for sender
-  if (sender && sender.socketId) {
-    const senderChats = await OneToOneChat.find({ participants: { $all: [receiverId, senderId] } })
-      .populate('participants', 'name username profilePicture')
-      .populate({
-        path: 'lastMessage',
-        populate: {
-          path: 'sender',
-          select: 'name username profilePicture',
-        },
-      })
-      .sort({
-        lastMessage: -1,
-      });
+  // Update chat list for both users
+  const [receiverChats, senderChats] = await Promise.all([
+    this.getUserChatList(receiverId, senderId),
+    this.getUserChatList(senderId, receiverId),
+  ]);
 
-    const senderChatResults = await Promise.all(
-      senderChats.map(async chat => {
-        const unreadCount = await messageModel.countDocuments({
-          chat: chat._id,
-          receiver: senderId,
-          status: 'sent',
-        });
-        const otherParticipant = chat.participants.filter(
-          p => p._id.toString() !== senderId.toString()
-        );
-        const isFriend = await User.findById(senderId).then(user =>
-          user.friends.includes(otherParticipant[0]._id)
-        );
-        return {
-          ...chat.toObject(),
-          lastMessage: chat.lastMessage,
-          unreadCount,
-          isFriend,
-          chatWith: otherParticipant,
-        };
-      })
-    );
-
-    io.to(sender.socketId).emit(`chat_list_update_${sender._id}`, {
+  if (receiverId !== senderId) {
+    io.to(receiverRoom).emit('chat_list_update', {
       success: true,
-      data: senderChatResults,
+      data: receiverChats,
     });
   }
 
-  setTimeout(() => {
-    emittedMessages.delete(messageId);
-  }, 60 * 1000);
+  io.to(senderRoom).emit('chat_list_update', {
+    success: true,
+    data: senderChats,
+  });
 };
