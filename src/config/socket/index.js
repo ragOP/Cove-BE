@@ -1,6 +1,7 @@
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../../models/userModel');
+const OneToOneChat = require('../../models/chatModel/index');
 
 let io;
 
