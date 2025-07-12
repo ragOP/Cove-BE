@@ -70,11 +70,12 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
   const receiverRoom = `user:${receiverId}`;
   const senderRoom = `user:${senderId}`;
 
-  const receiver = await User.findById(receiverId).select('socketId');
-  const sender = await User.findById(senderId).select('socketId');
+  const receiver = await User.findById(receiverId);
+  const sender = await User.findById(senderId);
+
 
   // Check if receiver is active in the chat room
-  const receiverUser = await User.findById(receiverId).select('socketId');
+  const receiverUser = await User.findById(receiverId);
   const chatRoom = io.sockets.adapter.rooms.get(chatRoomId);
   const isReceiverInChat = receiverUser?.isOnline && chatRoom?.has(receiverUser.socketId);
 
@@ -82,6 +83,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
     io.to(chatRoomId).emit('new_message', {
       ...message.toObject(),
       chat: chat._id,
+      userId: receiverId,
     });
   }
 
@@ -94,6 +96,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
       io.to(chatRoomId).emit(`message_read_update`, {
         success: true,
         data: message,
+        userId: senderId,
       });
     }
   }
