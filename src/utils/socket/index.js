@@ -34,9 +34,7 @@ exports.getUserChatList = async (userId, otherId) => {
         status: 'sent',
       });
 
-      const chatWith = chat.participants.filter(
-        p => p._id.toString() !== userId.toString()
-      );
+      const chatWith = chat.participants.filter(p => p._id.toString() !== userId.toString());
 
       return {
         ...chat.toObject(),
@@ -72,34 +70,40 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
   const receiverRoom = `user:${receiverId}`;
   const senderRoom = `user:${senderId}`;
 
+  const receiver = await User.findById(receiverId).select('socketId');
+  const sender = await User.findById(senderId).select('socketId');
+
   // Check if receiver is active in the chat room
   const receiverUser = await User.findById(receiverId).select('socketId');
   const chatRoom = io.sockets.adapter.rooms.get(chatRoomId);
-  const isReceiverInChat =
-    receiverUser?.socketId && chatRoom?.has(receiverUser.socketId);
+  const isReceiverInChat = receiverUser?.socketId && chatRoom?.has(receiverUser.socketId);
 
-  // Emit message to receiver (if not same as sender)
-  if (receiverId !== senderId) {
-    io.to(receiverRoom).emit('new_message', {
-      message: message.toObject(),
-      chatId: chat._id,
+  if (receiver && receiver.socketId) {
+    io.to(senderRoom).emit('new_message', {
+      ...message.toObject(),
+      chat: chat._id,
     });
   }
 
-  // Emit message to sender
-  io.to(senderRoom).emit('new_message', {
-    message: message.toObject(),
-    chatId: chat._id,
-  });
+  // Only emit to the sender's socket
+  if (sender && sender.socketId) {
+    io.to(receiverRoom).emit('new_message', {
+      ...message.toObject(),
+      chat: chat._id,
+    });
+  }
 
   // If receiver is actively in chat, mark message as read
   if (isReceiverInChat) {
     message.status = 'read';
     await message.save();
 
-    io.to(senderRoom).emit('message_read_update', {
-      messageId: message._id,
-    });
+    if (sender && sender.socketId) {
+      io.to(senderRoom).emit(`message_read_update`, {
+        success: true,
+        data: message,
+      });
+    }
   }
 
   // Update chat list for both users
