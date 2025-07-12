@@ -10,7 +10,7 @@ const emittedMessages = new Set();
  * Get all one-to-one chats between userId and otherId,
  * with unread count, isFriend flag, and latest message.
  */
-exports.getUserChatList = async (userId, otherId) => {
+getUserChatList = async (userId, otherId) => {
   const chats = await OneToOneChat.find({
     participants: { $all: [userId, otherId] },
   })
