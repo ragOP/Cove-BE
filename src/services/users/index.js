@@ -24,7 +24,7 @@ const { decrypt } = require('../../utils/encryption');
 const messageModel = require('../../models/messageModel');
 const { findPendingFriendRequestBySender } = require('../../repositories/users/index');
 const { getIO } = require('../../config/socket');
-const { emitNewMessage } = require('../../utils/socket');
+const { emitNewMessage, getUserChatList } = require('../../utils/socket');
 const {
   sendFriendRequestNotification,
   sendFriendRequestAcceptanceNotification,
@@ -131,7 +131,10 @@ exports.sendFriendRequest = async (senderId, receiverId) => {
 
   const request = await createNewFriendRequest(senderId, receiverId);
 
-  const data = await FriendRequest.find({ receiver: receiverId, status: 'pending' }).populate('sender', 'name username profilePicture');
+  const data = await FriendRequest.find({ receiver: receiverId, status: 'pending' }).populate(
+    'sender',
+    'name username profilePicture'
+  );
   const count = data.length;
 
   const io = getIO();
@@ -205,28 +208,47 @@ exports.acceptFriendRequest = async requestId => {
   }
 
   const sender = await User.findById(request.sender).select('socketId');
-  const data = await FriendRequest.find({ sender: request.sender, status: 'pending' }).populate('receiver', 'name username profilePicture');
+  const data = await FriendRequest.find({ sender: request.sender, status: 'pending' }).populate(
+    'receiver',
+    'name username profilePicture'
+  );
   const count = data.length;
-  if (sender && sender.socketId) {
-    const io = getIO();
-    io.to(sender.socketId).emit('notification', {
-      success: true,
+  const io = getIO();
+
+  const receiverRoom = `user:${request.receiver}`;
+  const senderRoom = `user:${request.sender}`;
+
+  const [receiverChats, senderChats] = await Promise.all([
+    getUserChatList(request.receiver, request.sender),
+    getUserChatList(request.sender, request.receiver),
+  ]);
+
+  io.to(receiverRoom).emit('chat_list_update', {
+    success: true,
+    data: receiverChats,
+  });
+
+  io.to(senderRoom).emit('chat_list_update', {
+    success: true,
+    data: senderChats,
+  });
+  io.to(senderRoom).emit('notification', {
+    success: true,
+    data: {
+      type: 'friend_request_accepted',
+      title: `${request.sender.name} has accepted your friend request`,
       data: {
-        type: 'friend_request_accepted',
-        title: `${request.sender.name} has accepted your friend request`,
-        data: {
-          requestId: request._id,
-        },
+        requestId: request._id,
       },
-    });
-    io.to(sender && sender.socketId).emit('friend_request_received', {
-      success: true,
-      data: {
-        count: count,
-        data: data,
-      },
-    });
-  }
+    },
+  });
+  io.to(senderRoom).emit('friend_request_received', {
+    success: true,
+    data: {
+      count: count,
+      data: data,
+    },
+  });
 
   return {
     message: 'Friend request accepted successfully',
@@ -694,7 +716,7 @@ exports.updateFCMToken = async (userId, FCMToken) => {
 };
 
 exports.getUserInfo = async userId => {
-  const user = await User.findOne({_id: userId}).select('-password');
+  const user = await User.findOne({ _id: userId }).select('-password');
   if (!user) {
     return {
       message: 'User not found',
@@ -744,9 +766,9 @@ exports.searchFriends = async (userId, search) => {
   const friends = await User.findById(userId).select('friends');
   const friendQuery = await User.find({
     $or: [
-      {username: { $regex: search, $options: 'i' }},
-      {name: { $regex: search, $options: 'i' }},
-      {phoneNumber: { $regex: search, $options: 'i' }},
+      { username: { $regex: search, $options: 'i' } },
+      { name: { $regex: search, $options: 'i' } },
+      { phoneNumber: { $regex: search, $options: 'i' } },
     ],
     _id: { $in: friends.friends },
   });
@@ -755,4 +777,4 @@ exports.searchFriends = async (userId, search) => {
     data: friendQuery,
     statusCode: 200,
   };
-}
+};
