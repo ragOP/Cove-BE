@@ -55,6 +55,10 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isSensitive: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
