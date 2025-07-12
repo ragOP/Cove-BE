@@ -79,7 +79,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
   const isReceiverInChat = receiverUser?.socketId && chatRoom?.has(receiverUser.socketId);
 
   if (receiver && receiver.socketId) {
-    io.to(senderRoom).emit('new_message', {
+    io.to(receiverRoom).emit('new_message', {
       ...message.toObject(),
       chat: chat._id,
     });
@@ -87,7 +87,7 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
 
   // Only emit to the sender's socket
   if (sender && sender.socketId) {
-    io.to(receiverRoom).emit('new_message', {
+    io.to(senderRoom).emit('new_message', {
       ...message.toObject(),
       chat: chat._id,
     });
@@ -112,12 +112,10 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
     this.getUserChatList(senderId, receiverId),
   ]);
 
-  if (receiverId !== senderId) {
-    io.to(receiverRoom).emit('chat_list_update', {
-      success: true,
-      data: receiverChats,
-    });
-  }
+  io.to(receiverRoom).emit('chat_list_update', {
+    success: true,
+    data: receiverChats,
+  });
 
   io.to(senderRoom).emit('chat_list_update', {
     success: true,
