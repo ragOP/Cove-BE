@@ -137,27 +137,27 @@ exports.sendFriendRequest = async (senderId, receiverId) => {
   );
   const count = data.length;
 
+  const receiverRoom = `user:${receiverId}`;
+
   const io = getIO();
   receiver = await User.findById(receiverId).select('socketId');
-  if (receiver && receiver.socketId) {
-    io.to(receiver.socketId).emit('friend_request_received', {
-      success: true,
+  io.to(receiverRoom).emit('friend_request_received', {
+    success: true,
+    data: {
+      count: count,
+      data: data,
+    },
+  });
+  io.to(receiverRoom).emit('notification', {
+    success: true,
+    data: {
+      type: 'friend_request_received',
+      title: `${sender.name} has sent you a friend request`,
       data: {
-        count: count,
-        data: data,
+        requestId: request._id,
       },
-    });
-    io.to(receiver.socketId).emit('notification', {
-      success: true,
-      data: {
-        type: 'friend_request_received',
-        title: `${sender.name} has sent you a friend request`,
-        data: {
-          requestId: request._id,
-        },
-      },
-    });
-  }
+    },
+  });
 
   sender = await User.findById(senderId).select('name username profilePicture');
   const pushResultwithReq = await sendFriendRequestNotification(receiverId, sender);
@@ -207,7 +207,7 @@ exports.acceptFriendRequest = async requestId => {
     );
   }
 
-  const sender = await User.findById(request.sender).select('socketId');
+  // const sender = await User.findById(request.sender).select('socketId');
   const data = await FriendRequest.find({ sender: request.sender, status: 'pending' }).populate(
     'receiver',
     'name username profilePicture'
@@ -232,7 +232,7 @@ exports.acceptFriendRequest = async requestId => {
     success: true,
     data: senderChats,
   });
-  
+
   io.to(senderRoom).emit('notification', {
     success: true,
     data: {
