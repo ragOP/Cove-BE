@@ -139,7 +139,7 @@ exports.createOneToOneChat = async (userA, userB) => {
 
 exports.createMessageAndAddToChat = async (
   chat,
-  { senderId, receiverId, content, type, mediaUrl, duration, fileSize }
+  { senderId, receiverId, content, type, mediaUrl, duration, fileSize, isSensitive }
 ) => {
   const messageData = {
     sender: senderId,
@@ -154,6 +154,7 @@ exports.createMessageAndAddToChat = async (
 
   if (type === 'image') {
     messageData.mediaUrl = mediaUrl;
+    messageData.isSensitive = isSensitive;
   }
 
   if (type === 'text-image') {

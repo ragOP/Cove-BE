@@ -4,8 +4,6 @@ const {
   handleUserProfileUpdate,
   handleIsUsernameAvailable,
   handleUserSearch,
-  handleAddFriend,
-  getAllChats,
   handleGetAllChats,
   handleSendMessage,
   handleSendFriendRequest,
@@ -22,6 +20,9 @@ const {
   handleGetUserInfo,
   handleRejectFriendRequest,
   handleSearchFriends,
+  handleMarkAsSensitive,
+  handledeleteMutipleMessages,
+  handleGetUserGallery
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -30,7 +31,6 @@ const { user } = require('../../middleware/protectedRoute');
 const {
   validateUsernameQuery,
   validateUserSearch,
-  validateAddFriend,
   validateSendMessage,
 } = require('../../validators/users');
 const router = express.Router();
@@ -587,5 +587,95 @@ router.delete('/reject-friend-request/:id', user, handleRejectFriendRequest);
  *         description: List of friends
  */
 router.get('/search-friends', user, handleSearchFriends);
+
+/**
+ * @swagger
+ * /api/user/mark-as-sensitive:
+ *   post:
+ *     summary: Mark as sensitive
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200: 
+ *         description: Users marked as sensitive successfully
+ */
+router.route('/mark-as-sensitive').post(user, handleMarkAsSensitive);
+
+/**
+ * @swagger
+ * /api/user/delete-messages:
+ *   post:
+ *     summary: Delete multiple messages
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   example: 60d5f484f1c2b8b8a4e4e4e4
+ *               conversationId:
+ *                 type: string
+ *                 example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200:
+ *         description: Messages deleted successfully
+ */
+
+router.route('/delete-messages').post(user, handledeleteMutipleMessages);
+
+/**
+ * @swagger
+ * /api/user/get-user-gallery:
+ *   get:
+ *     summary: Get user gallery
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: number
+ *           example: 1
+ *       - in: query
+ *         name: per_page
+ *         required: false
+ *         schema:
+ *           type: number
+ *           example: 10
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *           example: johndoe
+ *     responses:
+ *       200:
+ *         description: User gallery retrieved successfully
+ */
+
+router.route('/get-user-gallery').get(user, handleGetUserGallery);
 
 module.exports = router;

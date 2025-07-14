@@ -282,6 +282,7 @@ exports.sendMessageService = async ({
   mediaUrl,
   duration,
   fileSize,
+  isSensitive,
 }) => {
   let chat = await getOneToOneChatByParticipants(senderId, receiverId);
 
@@ -306,6 +307,7 @@ exports.sendMessageService = async ({
       mediaUrl,
       duration,
       fileSize,
+      isSensitive,
     });
 
     await emitNewMessage(message, chat, receiverId, senderId);
@@ -336,6 +338,7 @@ exports.sendMessageService = async ({
     mediaUrl,
     duration,
     fileSize,
+    isSensitive,
   });
 
   await emitNewMessage(message, chat, receiverId, senderId);
@@ -776,6 +779,64 @@ exports.searchFriends = async (userId, search) => {
   return {
     message: 'Friends retrieved successfully',
     data: friendQuery,
+    statusCode: 200,
+  };
+};
+
+exports.markAsSensitive = async (userId, ids) => {
+  const idsTobeMarked = ids;
+  const result = await messageModel.updateMany(
+    { sender: userId, _id: { $in: ids } },
+    {
+      $set: {
+        isSensitive: true,
+      },
+    }
+  );
+  return {
+    message: 'Users marked as sensitive successfully',
+    data: idsTobeMarked,
+    statusCode: 200,
+  };
+};
+
+exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
+  const idsTobeDeleted = ids;
+  const result = await messageModel.deleteMany({ sender: userId, _id: { $in: ids } });
+  const io = getIO();
+  io.to(`chat:${conversationId}`).emit('message_deleted', {
+    success: true,
+    data: idsTobeDeleted,
+  });
+  return {
+    message: 'Messages deleted successfully',
+    data: idsTobeDeleted,
+    statusCode: 200,
+  };
+};
+
+exports.getUserGallery = async (userId, filters) => {
+  const { page = 1, per_page = 50, search = '' } = filters;
+  const skip = (parseInt(page) - 1) * parseInt(per_page);
+  const limit = parseInt(per_page);
+
+  const gallery = await messageModel
+    .find({
+      $or: [{ sender: userId }, { receiver: userId }],
+      type: { $in: ['image', 'text-image'] },
+    })
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 });
+  return {
+    message: 'User gallery retrieved successfully',
+    data: {
+      gallery,
+      total: gallery.length,
+      page,
+      per_page,
+      totalPages: Math.ceil(gallery.length / per_page),
+    },
     statusCode: 200,
   };
 };

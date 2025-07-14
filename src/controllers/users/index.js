@@ -20,6 +20,9 @@ const {
   getUserInfo,
   rejectFriendRequest,
   searchFriends,
+  markAsSensitive,
+  deleteMutipleMessages,
+  getUserGallery,
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -85,6 +88,11 @@ exports.handleSendMessage = asyncHandler(async (req, res) => {
   const { receiverId, content, type, mediaUrl, duration, fileSize } = req.body;
 
   const senderId = req.user.id;
+  let isSensitive = false;
+
+  if (type === 'image') {
+    isSensitive = req.body.isSensitive;
+  }
 
   const result = await sendMessageService({
     senderId,
@@ -94,6 +102,7 @@ exports.handleSendMessage = asyncHandler(async (req, res) => {
     mediaUrl,
     duration,
     fileSize,
+    isSensitive,
   });
 
   return res.status(200).json(new ApiResponse(result.statusCode, result.data, result.message));
@@ -228,6 +237,35 @@ exports.handleSearchFriends = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { search } = req.query;
   const result = await searchFriends(userId, search);
+  const { message, data, statusCode = 200 } = result;
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleMarkAsSensitive = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { ids } = req.body;
+  const result = await markAsSensitive(userId, ids);
+  const { message, data, statusCode = 200 } = result;
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handledeleteMutipleMessages = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { ids, conversationId } = req.body;
+  const result = await deleteMutipleMessages(userId, ids, conversationId);
+  const { message, data, statusCode = 200 } = result;
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleGetUserGallery = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { page = 1, per_page = 50, search = '' } = req.query;
+  const filters = {
+    search: search ? search.trim() : '',
+    page: parseInt(page, 10),
+    per_page: parseInt(per_page, 10),
+  };
+  const result = await getUserGallery(userId, filters);
   const { message, data, statusCode = 200 } = result;
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
 });
