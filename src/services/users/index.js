@@ -30,6 +30,7 @@ const {
   sendFriendRequestAcceptanceNotification,
   sendMessageNotification,
 } = require('../pushNotification');
+const { checkIfActive } = require('../../utils/checkIfActive');
 
 exports.updateUserProfile = async (data, file, id) => {
   const filePath = file ? file.path : null;
@@ -389,6 +390,7 @@ exports.getAllChatsForUser = async (userId, filters) => {
         select: 'name username profilePicture',
       },
     })
+    .select('-messages')
     .skip(skip)
     .limit(limit)
     .sort({
@@ -402,23 +404,20 @@ exports.getAllChatsForUser = async (userId, filters) => {
         receiver: userId,
         status: 'sent',
       });
-      const messages = await messageModel.find({ chat: chat._id }).sort({ createdAt: -1 });
       const otherParticipant = chat.participants.filter(
         p => p._id.toString() !== userId.toString()
       );
       const isFriend = await User.findById(userId).then(user =>
         user.friends.includes(otherParticipant[0]._id)
       );
+      const lastMessageDate = chat.lastMessage?.createdAt || null;
+      const isActive = checkIfActive(lastMessageDate);
       return {
         ...chat.toObject(),
+        isActive,
         lastMessage: chat.lastMessage,
         unreadCount,
         isFriend,
-        messages: messages.map(message => ({
-          ...message.toObject(),
-          content: message.content,
-          mediaUrl: message.mediaUrl,
-        })),
         chatWith: otherParticipant,
       };
     })
@@ -508,6 +507,9 @@ exports.getAllOneToOneChats = async (userId, receiverId) => {
     }));
     const receiver = chatObj.participants.find(p => p._id.toString() === receiverId.toString());
     chatObj.receiver = receiver;
+    const lastMessageDate = chatObj.lastMessage?.createdAt || null;
+    const isActive = checkIfActive(lastMessageDate);
+    chatObj.isActive = isActive;
     return chatObj;
   });
 
