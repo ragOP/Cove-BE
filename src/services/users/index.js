@@ -827,6 +827,8 @@ exports.getUserGallery = async (userId, filters) => {
       $or: [{ sender: userId }, { receiver: userId }],
       type: { $in: ['image', 'text-image'] },
     })
+    .populate('sender', 'name username profilePicture')
+    .populate('receiver', 'name username profilePicture')
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 });
