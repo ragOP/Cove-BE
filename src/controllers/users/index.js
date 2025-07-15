@@ -23,6 +23,7 @@ const {
   markAsSensitive,
   deleteMutipleMessages,
   getUserGallery,
+  marksAsUnsensitive
 } = require('../../services/users');
 const ApiResponse = require('../../utils/apiResponse');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -266,6 +267,14 @@ exports.handleGetUserGallery = asyncHandler(async (req, res) => {
     per_page: parseInt(per_page, 10),
   };
   const result = await getUserGallery(userId, filters);
+  const { message, data, statusCode = 200 } = result;
+  return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+});
+
+exports.handleMarksAsUnsensitive = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { ids } = req.body;
+  const result = await marksAsUnsensitive(userId, ids);
   const { message, data, statusCode = 200 } = result;
   return res.status(statusCode).json(new ApiResponse(statusCode, data, message));
 });

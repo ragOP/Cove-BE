@@ -22,7 +22,8 @@ const {
   handleSearchFriends,
   handleMarkAsSensitive,
   handledeleteMutipleMessages,
-  handleGetUserGallery
+  handleGetUserGallery,
+  handleMarksAsUnsensitive
 } = require('../../controllers/users');
 const { validateUserProfileUpdate } = require('../../validators/auth');
 const { validateRequest } = require('../../middleware/validateRequest');
@@ -677,5 +678,32 @@ router.route('/delete-messages').post(user, handledeleteMutipleMessages);
  */
 
 router.route('/get-user-gallery').get(user, handleGetUserGallery);
+
+/**
+ * @swagger
+ * /api/user/marks-as-unsensitive:
+ *   post:
+ *     summary: Marks as unsensitive
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   example: 60d5f484f1c2b8b8a4e4e4e4
+ *     responses:
+ *       200:
+ *         description: Users marked as unsensitive successfully
+ */
+
+router.route('/marks-as-unsensitive').post(user, handleMarksAsUnsensitive);
 
 module.exports = router;

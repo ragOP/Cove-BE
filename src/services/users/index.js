@@ -840,3 +840,16 @@ exports.getUserGallery = async (userId, filters) => {
     statusCode: 200,
   };
 };
+
+exports.marksAsUnsensitive = async (userId, ids) => {
+  const idsTobeMarked = ids;
+  const result = await messageModel.updateMany(
+    { sender: userId, _id: { $in: ids } },
+    { $set: { isSensitive: false } }
+  );
+  return {
+    message: 'Users marked as unsensitive successfully',
+    data: idsTobeMarked,
+    statusCode: 200,
+  };
+};
