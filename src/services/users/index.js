@@ -786,9 +786,14 @@ exports.searchFriends = async (userId, search) => {
 };
 
 exports.markAsSensitive = async (userId, ids) => {
-  const idsTobeMarked = ids;
-  const result = await messageModel.updateMany(
-    { sender: userId, _id: { $in: ids } },
+  const validIds = await messageModel.find({
+    sender: userId,
+    _id: { $in: ids },
+  }).select('_id');
+  const idsTobeMarked = validIds.map(id => id._id.toString());
+
+  await messageModel.updateMany(
+    { sender: userId, _id: { $in: idsTobeMarked } },
     {
       $set: {
         isSensitive: true,
@@ -803,17 +808,27 @@ exports.markAsSensitive = async (userId, ids) => {
 };
 
 exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
-  const idsTobeDeleted = ids;
-  const result = await messageModel.deleteMany({ sender: userId, _id: { $in: ids } });
+  const deletableMessages = await messageModel.find({
+    sender: userId,
+    _id: { $in: ids }
+  }).select('_id');
+
+  const deletableIds = deletableMessages.map(msg => msg._id.toString());
+  await messageModel.deleteMany({
+    sender: userId,
+    _id: { $in: deletableIds }
+  });
   const io = getIO();
   io.to(`chat:${conversationId}`).emit('message_deleted', {
     success: true,
-    data: idsTobeDeleted,
+    data: deletableMessages,
   });
+
   return {
-    message: 'Messages deleted successfully',
-    data: idsTobeDeleted,
+    message: 'Messages delete attempt completed',
+    data: deletableMessages,
     statusCode: 200,
+    success: true,
   };
 };
 
@@ -846,9 +861,13 @@ exports.getUserGallery = async (userId, filters) => {
 };
 
 exports.marksAsUnsensitive = async (userId, ids) => {
-  const idsTobeMarked = ids;
-  const result = await messageModel.updateMany(
-    { sender: userId, _id: { $in: ids } },
+  const validIds = await messageModel.find({
+    sender: userId,
+    _id: { $in: ids },
+  }).select('_id'); 
+  const idsTobeMarked = validIds.map(id => id._id.toString());
+  await messageModel.updateMany(
+    { sender: userId, _id: { $in: idsTobeMarked } },
     { $set: { isSensitive: false } }
   );
   return {
