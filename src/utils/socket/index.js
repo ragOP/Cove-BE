@@ -87,6 +87,13 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
     });
   }
 
+  if (message.type === 'image' || message.type === 'text-image') {
+    io.to(`user:${receiverId}`).emit('new_gallery_message', {
+      success: true,
+      data: message,
+    });
+  }
+
   // If receiver is actively in chat, mark message as read
   if (isReceiverInChat) {
     message.status = 'read';
