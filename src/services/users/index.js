@@ -786,10 +786,12 @@ exports.searchFriends = async (userId, search) => {
 };
 
 exports.markAsSensitive = async (userId, ids) => {
-  const validIds = await messageModel.find({
-    sender: userId,
-    _id: { $in: ids },
-  }).select('_id');
+  const validIds = await messageModel
+    .find({
+      sender: userId,
+      _id: { $in: ids },
+    })
+    .select('_id');
   const idsTobeMarked = validIds.map(id => id._id.toString());
 
   await messageModel.updateMany(
@@ -808,15 +810,17 @@ exports.markAsSensitive = async (userId, ids) => {
 };
 
 exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
-  const deletableMessages = await messageModel.find({
-    sender: userId,
-    _id: { $in: ids }
-  }).select('_id');
+  const deletableMessages = await messageModel
+    .find({
+      sender: userId,
+      _id: { $in: ids },
+    })
+    .select('_id type receiver');
 
   const deletableIds = deletableMessages.map(msg => msg._id.toString());
   await messageModel.deleteMany({
     sender: userId,
-    _id: { $in: deletableIds }
+    _id: { $in: deletableIds },
   });
   const io = getIO();
   io.to(`chat:${conversationId}`).emit('message_deleted', {
@@ -824,9 +828,32 @@ exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
     data: deletableMessages,
   });
 
+  const isOnlyGalleryMessages = deletableMessages.every(
+    msg => msg.type === 'image' || msg.type === 'text-image'
+  );
+
+  // This event will only triggers when all the messages are gallery messages
+  if (isOnlyGalleryMessages) {
+    const groupedMessages = {};
+
+    deletableMessages.forEach(msg => {
+      if (!groupedMessages[msg.receiver]) {
+        groupedMessages[msg.receiver] = [];
+      }
+      groupedMessages[msg.receiver].push(msg._id);
+    });
+
+    Object.entries(groupedMessages).forEach(([receiverId, messageIds]) => {
+      io.to(`user:${receiverId}`).emit('gallery_message_deleted', {
+        success: true,
+        data: messageIds,
+      });
+    });
+  }
+
   return {
     message: 'Messages delete attempt completed',
-    data: deletableMessages,
+    data: deletableIds,
     statusCode: 200,
     success: true,
   };
@@ -861,10 +888,12 @@ exports.getUserGallery = async (userId, filters) => {
 };
 
 exports.marksAsUnsensitive = async (userId, ids) => {
-  const validIds = await messageModel.find({
-    sender: userId,
-    _id: { $in: ids },
-  }).select('_id'); 
+  const validIds = await messageModel
+    .find({
+      sender: userId,
+      _id: { $in: ids },
+    })
+    .select('_id');
   const idsTobeMarked = validIds.map(id => id._id.toString());
   await messageModel.updateMany(
     { sender: userId, _id: { $in: idsTobeMarked } },
