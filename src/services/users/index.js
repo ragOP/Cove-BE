@@ -857,7 +857,7 @@ exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
 
   // We need to check if the deleted messages are the last messages in the chat
   const chat = await OneToOneChat.findById(conversationId);
-  if (chat && deletableIds.includes(chat.lastMessage?.toString())) {
+  if (chat && deletableIds.includes(chat.lastMessage._id.toString())) {
     const newLastMessage = await messageModel
       .findOne({
         chat: conversationId,
