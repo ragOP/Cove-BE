@@ -848,9 +848,42 @@ exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
         success: true,
         data: messageIds,
       });
+      io.to(`chat:${conversationId}`).emit('internal_message_deleted', {
+        success: true,
+        data: messageIds,
+      });
     });
   }
 
+  // We need to check if the deleted messages are the last messages in the chat
+  const chat = await OneToOneChat.findById(conversationId);
+  if (chat && deletableIds.includes(chat.lastMessage?.toString())) {
+    const newLastMessage = await messageModel
+      .findOne({
+        chat: conversationId,
+        _id: { $nin: deletableIds },
+      })
+      .sort({ createdAt: -1 });
+
+    await OneToOneChat.findByIdAndUpdate(conversationId, {
+      lastMessage: newLastMessage?._id || null,
+    });
+
+    const [receiverChats, senderChats] = await Promise.all([
+      getUserChatList(chat.participants[0], chat.participants[1]),
+      getUserChatList(chat.participants[1], chat.participants[0]),
+    ]);
+
+    io.to(`user:${chat.participants[0]}`).emit('chat_list_update', {
+      success: true,
+      data: receiverChats,
+    });
+
+    io.to(`user:${chat.participants[1]}`).emit('chat_list_update', {
+      success: true,
+      data: senderChats,
+    });
+  }
   return {
     message: 'Messages delete attempt completed',
     data: deletableIds,
