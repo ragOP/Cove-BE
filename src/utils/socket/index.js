@@ -2,6 +2,7 @@ const User = require('../../models/userModel');
 const OneToOneChat = require('../../models/chatModel/index');
 const Message = require('../../models/messageModel');
 const { getIO } = require('../../config/socket');
+const { checkIfActive } = require('../checkIfActive');
 
 // Global in-memory cache to prevent duplicate emits
 const emittedMessages = new Set();
@@ -35,11 +36,14 @@ exports.getUserChatList = async (userId, otherId) => {
       });
 
       const chatWith = chat.participants.filter(p => p._id.toString() !== userId.toString());
+      const lastMessageDate = chat.lastMessage?.createdAt || null;
+      const isActive = checkIfActive(lastMessageDate);
 
       return {
         ...chat.toObject(),
         unreadCount,
         chatWith,
+        isActive,
         isFriend: user?.friends.includes(chatWith[0]._id),
       };
     })
