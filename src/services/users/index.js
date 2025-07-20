@@ -854,45 +854,45 @@ exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
       });
     });
   }
-  const currentUserId = userId;
+  // const currentUserId = userId;
 
-  const chat = await OneToOneChat.findById(conversationId);
-  if (chat) {
-    const [participantA, participantB] = chat.participants.map(p => p.toString());
+  // const chat = await OneToOneChat.findById(conversationId);
+  // if (chat) {
+  //   const [participantA, participantB] = chat.participants.map(p => p.toString());
 
-    const senderId = participantA === currentUserId ? participantA : participantB;
-    const receiverId = participantA === currentUserId ? participantB : participantA;
+  //   const senderId = participantA === currentUserId ? participantA : participantB;
+  //   const receiverId = participantA === currentUserId ? participantB : participantA;
 
-    const lastMessage = chat.lastMessage;
-    for (const id of deletableIds) {
-      if (lastMessage && lastMessage.toString() === id.toString()) {
-        const newLastMessage = await messageModel
-          .findOne({
-            chat: conversationId,
-            _id: { $ne: lastMessage._id },
-          })
-          .sort({ createdAt: -1 });
+  //   const lastMessage = chat.lastMessage;
+  //   for (const id of deletableIds) {
+  //     if (lastMessage && lastMessage.toString() === id.toString()) {
+  //       const newLastMessage = await messageModel
+  //         .findOne({
+  //           chat: conversationId,
+  //           _id: { $ne: lastMessage._id },
+  //         })
+  //         .sort({ createdAt: -1 });
 
-        await OneToOneChat.findByIdAndUpdate(conversationId, {
-          lastMessage: newLastMessage?._id || null,
-        });
+  //       await OneToOneChat.findByIdAndUpdate(conversationId, {
+  //         lastMessage: newLastMessage?._id || null,
+  //       });
 
-        const [receiverChats, senderChats] = await Promise.all([
-          getUserChatList(receiverId, senderId),
-          getUserChatList(senderId, receiverId),
-        ]);
+  //       const [receiverChats, senderChats] = await Promise.all([
+  //         getUserChatList(receiverId, senderId),
+  //         getUserChatList(senderId, receiverId),
+  //       ]);
 
-        io.to(`user:${receiverId}`).emit('chat_list_update', {
-          success: true,
-          data: receiverChats,
-        });
-        io.to(`user:${senderId}`).emit('chat_list_update', {
-          success: true,
-          data: senderChats,
-        });
-      }
-    }
-  }
+  //       io.to(`user:${receiverId}`).emit('chat_list_update', {
+  //         success: true,
+  //         data: receiverChats,
+  //       });
+  //       io.to(`user:${senderId}`).emit('chat_list_update', {
+  //         success: true,
+  //         data: senderChats,
+  //       });
+  //     }
+  //   }
+  // }
 
   return {
     message: 'Messages delete attempt completed',
