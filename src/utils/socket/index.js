@@ -88,7 +88,12 @@ exports.emitNewMessage = async (message, chat, receiverId, senderId) => {
   }
 
   if (message.type === 'image' || message.type === 'text-image') {
+    console.log('emitting new gallery message', message.type);
     io.to(`user:${receiverId}`).emit('new_gallery_message', {
+      success: true,
+      data: message,
+    });
+    io.to(`user:${senderId}`).emit('new_gallery_message', {
       success: true,
       data: message,
     });
