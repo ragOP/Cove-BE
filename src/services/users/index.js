@@ -216,8 +216,8 @@ exports.acceptFriendRequest = async requestId => {
   const count = data.length;
   const io = getIO();
 
-  const receiverRoom = `user:${request.receiver}`;
-  const senderRoom = `user:${request.sender}`;
+  const receiverRoom = `user:${request.receiver.toString()}`;
+  const senderRoom = `user:${request.sender.toString()}`;
 
   const [receiverChats, senderChats] = await Promise.all([
     getUserChatList(request.receiver, request.sender),
@@ -737,7 +737,6 @@ exports.getUserInfo = async userId => {
 
 exports.rejectFriendRequest = async (userId, requestId) => {
   const request = await FriendRequest.findById(requestId);
-  console.log(request, 'request');
   if (!request) {
     return {
       message: 'Friend request not found',
@@ -754,7 +753,6 @@ exports.rejectFriendRequest = async (userId, requestId) => {
   }
   const sender = request.sender;
   const receiver = request.receiver;
-  console.log(sender, receiver, 'sender and receiver');
   const senderUser = await User.findById(sender).select('name username profilePicture');
   const chat = await OneToOneChat.findOne({ participants: { $all: [sender, receiver] } });
   if (chat) {
@@ -765,14 +763,17 @@ exports.rejectFriendRequest = async (userId, requestId) => {
   const data = await FriendRequest.find({ receiver: receiver, status: 'pending' });
   const count = data.length;
   const io = getIO();
-  io.to(`user:${sender}`).emit('friend_request_rejected', {
+
+  const receiverRoom = `user:${receiver.toString()}`;
+  const senderRoom = `user:${sender.toString()}`;
+  io.to(receiverRoom).emit('friend_request_rejected', {
     success: true,
     data: {
       count: count,
       data: data,
     },
   });
-  io.to(`user:${receiver}`).emit('notification', {
+  io.to(senderRoom).emit('notification', {
     success: true,
     data: {
       type: 'friend_request_rejected',
