@@ -941,7 +941,7 @@ exports.getUserGallery = async (userId, filters) => {
     .sort({ createdAt: -1 });
 
   const galleryWithFlags = gallery.map(msg => {
-    if (msg.sender.toString() !== userId) {
+    if (msg.receiver.toString() !== userId) {
       const msgObj = msg.toObject();
       msgObj.isSensitive = false;
       return msgObj;
@@ -951,7 +951,7 @@ exports.getUserGallery = async (userId, filters) => {
   return {
     message: 'User gallery retrieved successfully',
     data: {
-      gallery: galleryWithFlags,  
+      gallery: galleryWithFlags,
       total: gallery.length,
       page,
       per_page,
