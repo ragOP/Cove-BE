@@ -759,6 +759,26 @@ exports.rejectFriendRequest = async (userId, requestId) => {
     await messageModel.deleteMany({ chat: chat._id });
   }
   await FriendRequest.findByIdAndDelete(requestId);
+  const data = await FriendRequest.find({ receiver: receiver, status: 'pending' });
+  const count = data.length;
+  const io = getIO();
+  io.to(`user:${sender}`).emit('friend_request_rejected', {
+    success: true,
+    data: {
+      count: count,
+      data: data,
+    },
+  });
+  io.to(`user:${receiver}`).emit('notification', {
+    success: true,
+    data: {
+      type: 'friend_request_rejected',
+      title: `${sender.name} has rejected your friend request`,
+      data: {
+        requestId: requestId,
+      },
+    },
+  });
   return {
     message: 'Friend request rejected successfully',
     data: null,
