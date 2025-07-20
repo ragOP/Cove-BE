@@ -940,18 +940,20 @@ exports.getUserGallery = async (userId, filters) => {
     .limit(limit)
     .sort({ createdAt: -1 });
 
-  const galleryWithFlags = gallery.map(msg => {
-    if (msg.receiver.toString() !== userId) {
-      const msgObj = msg.toObject();
-      msgObj.isSensitive = false;
-      return msgObj;
-    }
-    return msg;
-  });
+  // const galleryWithFlags = gallery.map(msg => {
+  //   if (msg.sender.toString() === userId) {
+  //     const msgObj = msg.toObject();
+  //     msgObj.isSensitive = false;
+  //     return msgObj;
+  //   }
+  //   return msg;
+  // });
+  // console.log(galleryWithFlags, 'galleryWithFlags');
+  // console.log(gallery, 'gallery');
   return {
     message: 'User gallery retrieved successfully',
     data: {
-      gallery: galleryWithFlags,
+      gallery,
       total: gallery.length,
       page,
       per_page,
