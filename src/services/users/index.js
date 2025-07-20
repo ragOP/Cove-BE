@@ -737,6 +737,7 @@ exports.getUserInfo = async userId => {
 
 exports.rejectFriendRequest = async (userId, requestId) => {
   const request = await FriendRequest.findById(requestId);
+  console.log(request, 'request');
   if (!request) {
     return {
       message: 'Friend request not found',
@@ -753,6 +754,8 @@ exports.rejectFriendRequest = async (userId, requestId) => {
   }
   const sender = request.sender;
   const receiver = request.receiver;
+  console.log(sender, receiver, 'sender and receiver');
+  const senderUser = await User.findById(sender).select('name username profilePicture');
   const chat = await OneToOneChat.findOne({ participants: { $all: [sender, receiver] } });
   if (chat) {
     await OneToOneChat.findByIdAndDelete(chat._id);
@@ -773,7 +776,7 @@ exports.rejectFriendRequest = async (userId, requestId) => {
     success: true,
     data: {
       type: 'friend_request_rejected',
-      title: `${sender.name} has rejected your friend request`,
+      title: `${senderUser.name} has rejected your friend request`,
       data: {
         requestId: requestId,
       },
