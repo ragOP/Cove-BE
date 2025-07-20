@@ -643,20 +643,18 @@ exports.readChat = async (userId, chatId) => {
         })
       );
     };
-    if (currentUser && currentUser.socketId) {
-      const chatList = await getChatList(userId);
-      io.to(currentUser.socketId).emit(`chat_list_update_${currentUser._id}`, {
-        success: true,
-        data: chatList,
-      });
-    }
-    if (sender && sender.socketId) {
-      const chatList = await getChatList(otherParticipant);
-      io.to(sender.socketId).emit(`chat_list_update_${sender._id}`, {
-        success: true,
-        data: chatList,
-      });
-    }
+    const [receiverChatList, senderChatList] = await Promise.all([
+      getChatList(userId),
+      getChatList(otherParticipant),
+    ]);
+    io.to(`user:${userId}`).emit(`chat_list_update`, {
+      success: true,
+      data: receiverChatList,
+    });
+    io.to(`user:${otherParticipant}`).emit(`chat_list_update`, {
+      success: true,
+      data: senderChatList,
+    });
     return {
       message: 'Chat read successfully',
       data: { unreadCount, readCount },
