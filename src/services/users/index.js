@@ -949,20 +949,19 @@ exports.getUserGallery = async (userId, filters) => {
     .limit(limit)
     .sort({ createdAt: -1 });
 
-  // const galleryWithFlags = gallery.map(msg => {
-  //   if (msg.sender.toString() === userId) {
-  //     const msgObj = msg.toObject();
-  //     msgObj.isSensitive = false;
-  //     return msgObj;
-  //   }
-  //   return msg;
-  // });
-  // console.log(galleryWithFlags, 'galleryWithFlags');
-  // console.log(gallery, 'gallery');
+  const galleryWithFlags = gallery.map(msg => {
+    if (msg.sender._id.toString() !== userId.toString()) {
+      const msgObj = msg.toObject();
+      msgObj.isSensitive = false;
+      return msgObj;
+    }
+    return msg;
+  });
+  
   return {
     message: 'User gallery retrieved successfully',
     data: {
-      gallery,
+      gallery: galleryWithFlags,
       total: gallery.length,
       page,
       per_page,
