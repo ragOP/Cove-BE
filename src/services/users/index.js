@@ -870,51 +870,60 @@ exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
         success: true,
         data: messageIds,
       });
-      io.to(`chat:${conversationId}`).emit('internal_message_deleted', {
-        success: true,
-        data: messageIds,
-      });
+      if (conversationId) {
+        io.to(`chat:${conversationId}`).emit('internal_message_deleted', {
+          success: true,
+          data: messageIds,
+        });
+      }
     });
   }
-  // const currentUserId = userId;
 
-  // const chat = await OneToOneChat.findById(conversationId);
-  // if (chat) {
-  //   const [participantA, participantB] = chat.participants.map(p => p.toString());
+  if (conversationId) {
+    const currentUserId = userId;
 
-  //   const senderId = participantA === currentUserId ? participantA : participantB;
-  //   const receiverId = participantA === currentUserId ? participantB : participantA;
+    const chat = await OneToOneChat.findById(conversationId);
+    if (chat) {
+      const [participantA, participantB] = chat.participants.map(p => p.toString());
 
-  //   const lastMessage = chat.lastMessage;
-  //   for (const id of deletableIds) {
-  //     if (lastMessage && lastMessage.toString() === id.toString()) {
-  //       const newLastMessage = await messageModel
-  //         .findOne({
-  //           chat: conversationId,
-  //           _id: { $ne: lastMessage._id },
-  //         })
-  //         .sort({ createdAt: -1 });
+      const senderId = participantA === currentUserId ? participantA : participantB;
+      const receiverId = participantA === currentUserId ? participantB : participantA;
 
-  //       await OneToOneChat.findByIdAndUpdate(conversationId, {
-  //         lastMessage: newLastMessage?._id || null,
-  //       });
+      const lastMessage = chat.lastMessage;
+      for (const id of deletableIds) {
+        if (lastMessage && lastMessage.toString() === id.toString()) {
+          const newLastMessage = await messageModel
+            .findOne({
+              chat: conversationId,
+              _id: { $ne: lastMessage._id },
+            })
+            .sort({ createdAt: -1 });
 
-  //       const [receiverChats, senderChats] = await Promise.all([
-  //         getUserChatList(receiverId, senderId),
-  //         getUserChatList(senderId, receiverId),
-  //       ]);
+          await OneToOneChat.findByIdAndUpdate(
+            conversationId,
+            {
+              lastMessage: newLastMessage?._id || null,
+            },
+            { new: true }
+          );
 
-  //       io.to(`user:${receiverId}`).emit('chat_list_update', {
-  //         success: true,
-  //         data: receiverChats,
-  //       });
-  //       io.to(`user:${senderId}`).emit('chat_list_update', {
-  //         success: true,
-  //         data: senderChats,
-  //       });
-  //     }
-  //   }
-  // }
+          const [receiverChats, senderChats] = await Promise.all([
+            getUserChatList(receiverId, senderId),
+            getUserChatList(senderId, receiverId),
+          ]);
+
+          io.to(`user:${receiverId}`).emit('chat_list_update', {
+            success: true,
+            data: receiverChats,
+          });
+          io.to(`user:${senderId}`).emit('chat_list_update', {
+            success: true,
+            data: senderChats,
+          });
+        }
+      }
+    }
+  }
 
   return {
     message: 'Messages delete attempt completed',
