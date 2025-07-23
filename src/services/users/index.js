@@ -542,9 +542,18 @@ exports.getMedia = async (userId, receiverId) => {
     .populate('sender', 'name username profilePicture')
     .populate('receiver', 'name username profilePicture');
 
+  const galleryWithFlags = messages.map(msg => {
+    if (msg.sender._id.toString() !== userId.toString()) {
+      const msgObj = msg.toObject();
+      msgObj.isSensitive = false;
+      return msgObj;
+    }
+    return msg;
+  });
+
   return {
     message: 'Media messages retrieved successfully',
-    data: messages,
+    data: galleryWithFlags,
     statusCode: 200,
   };
 };
@@ -957,7 +966,7 @@ exports.getUserGallery = async (userId, filters) => {
     }
     return msg;
   });
-  
+
   return {
     message: 'User gallery retrieved successfully',
     data: {
