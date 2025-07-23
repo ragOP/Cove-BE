@@ -867,6 +867,8 @@ exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
     .select('_id type receiver');
 
   const deletableIds = deletableMessages.map(msg => msg._id.toString());
+  const receiverId = deletableMessages[0].receiver.toString();
+
   await messageModel.deleteMany({
     sender: userId,
     _id: { $in: deletableIds },
@@ -874,7 +876,10 @@ exports.deleteMutipleMessages = async (userId, ids, conversationId) => {
   const io = getIO();
   io.to(`chat:${conversationId}`).emit('message_deleted', {
     success: true,
-    data: deletableMessages,
+    data: {
+      messageIds: deletableIds,
+      receiverId: receiverId,
+    },
   });
 
   const isOnlyGalleryMessages = deletableMessages.every(
