@@ -515,23 +515,23 @@ exports.getAllOneToOneChats = async (userId, receiverId) => {
     return chatObj;
   });
 
-  const chatsWithSensitive = chatsWithFlags[0].messages.map(chat => {
-    if (chat.sender._id.toString() !== userId.toString()) {
-      const chatObj = chat;
-      chatObj.isSensitive = false;
-      return chatObj;
-    }
-    return chat;
-  });
+  // const chatsWithSensitive = chatsWithFlags[0].messages.map(chat => {
+  //   if (chat.sender._id.toString() !== userId.toString()) {
+  //     const chatObj = chat;
+  //     chatObj.isSensitive = false;
+  //     return chatObj;
+  //   }
+  //   return chat;
+  // });
 
-  const updatedChats = {
-    ...chatsWithFlags[0],
-    messages: chatsWithSensitive,
-  };
+  // const updatedChats = {
+  //   ...chatsWithFlags[0],
+  //   messages: chatsWithSensitive,
+  // };
 
   return {
     message: 'One-to-one chats retrieved successfully',
-    data: updatedChats,
+    data: chatsWithFlags,
     statusCode: 200,
   };
 };
