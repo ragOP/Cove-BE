@@ -234,11 +234,13 @@ exports.acceptFriendRequest = async requestId => {
     data: senderChats,
   });
 
+  const user = await User.findById(request.sender).select('name username profilePicture');
+
   io.to(senderRoom).emit('notification', {
     success: true,
     data: {
       type: 'friend_request_accepted',
-      title: `${request.sender.name} has accepted your friend request`,
+      title: `${user.name} has accepted your friend request`,
       data: {
         requestId: request._id,
       },
